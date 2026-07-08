@@ -17,6 +17,7 @@ type Config struct {
 	MinIO                            MinIOConfig
 	JWT                              JWTConfig
 	Server                           ServerConfig
+	LLM                              LLMConfig
 	AppointmentCancelCutoffMinutes int
 }
 
@@ -51,6 +52,11 @@ type JWTConfig struct {
 	Secret         string
 	AccessTTL      time.Duration
 	RefreshTTLDays int
+}
+
+type LLMConfig struct {
+	APIKey string
+	APIURL string
 }
 
 // Load reads all configuration from environment variables.
@@ -114,6 +120,10 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid APPOINTMENT_CANCEL_CUTOFF_MINUTES: %w", err)
 	}
 	cfg.AppointmentCancelCutoffMinutes = cutoffMins
+
+	// LLM
+	cfg.LLM.APIKey = getEnvOrDefault("LLM_API_KEY", "")
+	cfg.LLM.APIURL = getEnvOrDefault("LLM_API_URL", "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent")
 
 	return cfg, nil
 }

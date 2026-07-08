@@ -17,21 +17,22 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/timurdianradhasejati/telemed_hub/internal/admin"
+	"github.com/timurdianradhasejati/telemed_hub/internal/ai"
 	"github.com/timurdianradhasejati/telemed_hub/internal/appointment"
 	"github.com/timurdianradhasejati/telemed_hub/internal/auth"
 	"github.com/timurdianradhasejati/telemed_hub/internal/config"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation"
 	"github.com/timurdianradhasejati/telemed_hub/internal/doctor"
 	"github.com/timurdianradhasejati/telemed_hub/internal/healthcheck"
-	"github.com/timurdianradhasejati/telemed_hub/internal/patient"
-	"github.com/timurdianradhasejati/telemed_hub/internal/prescription"
 	"github.com/timurdianradhasejati/telemed_hub/internal/inventory"
-	"github.com/timurdianradhasejati/telemed_hub/internal/pharmacy"
-	"github.com/timurdianradhasejati/telemed_hub/internal/admin"
 	"github.com/timurdianradhasejati/telemed_hub/internal/medical_record"
+	"github.com/timurdianradhasejati/telemed_hub/internal/notification"
+	"github.com/timurdianradhasejati/telemed_hub/internal/patient"
+	"github.com/timurdianradhasejati/telemed_hub/internal/pharmacy"
+	"github.com/timurdianradhasejati/telemed_hub/internal/prescription"
 	"github.com/timurdianradhasejati/telemed_hub/internal/shared"
 	"github.com/timurdianradhasejati/telemed_hub/internal/wallet"
-	"github.com/timurdianradhasejati/telemed_hub/internal/notification"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/logger"
 )
 
@@ -141,9 +142,11 @@ func main() {
 	pharmacyMod := pharmacy.NewModule(dbPool, rdb, cfg, log, prescriptionMod.Service, inventoryMod.Service, patientMod.Service, walletMod.Service, notificationMod.Service)
 	medicalRecordMod := medical_record.NewModule(dbPool, rdb, cfg, log, patientMod.Service, auditSvc)
 	adminMod := admin.NewModule(dbPool, rdb, cfg, log)
+	aiMod := ai.NewModule(dbPool, rdb, cfg, log, patientMod.Service)
 
 	// Start background workers
 	notificationMod.Start()
+	aiMod.Start()
 
 	// Resolve setter DI for circular dependency
 	appointmentMod.Service.SetConsultationService(consultationMod.Service)
@@ -162,6 +165,7 @@ func main() {
 		r.Mount("/medical-records", medicalRecordMod.Handler.Routes())
 		r.Mount("/admin", adminMod.Handler.Routes())
 		r.Mount("/notifications", notificationMod.Handler.Routes())
+		r.Mount("/ai/sessions", aiMod.Handler.Routes())
 	})
 
 	// --- Start HTTP server with graceful shutdown ---
@@ -196,6 +200,7 @@ func main() {
 
 		// Stop background workers
 		notificationMod.Stop()
+		aiMod.Stop()
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(ctx, cfg.Server.ShutdownTimeout)
 		defer shutdownCancel()

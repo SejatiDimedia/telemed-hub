@@ -125,7 +125,7 @@ Sprints are assumed to be **1–2 weeks** each, part-time pace, consistent with 
 | **Deliverables** | Async notification dispatcher decoupled from request/response cycle |
 | **Estimated Duration** | 1–1.5 weeks |
 
-## Sprint 11 — AI Assistant
+## Sprint 11 — AI Assistant (✅ Completed)
 
 | | |
 |---|---|

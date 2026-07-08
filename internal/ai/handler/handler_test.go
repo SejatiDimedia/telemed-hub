@@ -55,6 +55,11 @@ func (m *MockAIService) ListSessions(ctx context.Context, patientUserID uuid.UUI
 	return args.Get(0).([]*dto.SessionResponse), args.Error(1)
 }
 
+func (m *MockAIService) CloseInactiveSessions(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
 func newTestHandler(svc *MockAIService) (*AIHandler, chi.Router) {
 	cfg := &config.Config{}
 	h := NewAIHandler(svc, cfg, nil)

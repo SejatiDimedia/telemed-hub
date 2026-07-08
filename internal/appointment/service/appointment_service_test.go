@@ -58,6 +58,14 @@ func (m *MockAppointmentRepository) GetAvailabilityByID(ctx context.Context, id 
 	return args.Bool(0), args.Get(1).(uuid.UUID), args.Get(2).(time.Time), args.Get(3).(time.Time), args.Error(4)
 }
 
+func (m *MockAppointmentRepository) GetAppointmentsByScheduledTimeRange(ctx context.Context, start, end time.Time, status string) ([]*model.Appointment, error) {
+	args := m.Called(ctx, start, end, status)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.Appointment), args.Error(1)
+}
+
 // Stubs for doctor/patient/wallet
 type MockPatientService struct {
 	mock.Mock
@@ -149,6 +157,11 @@ func (m *MockDoctorService) GetAvailability(ctx context.Context, doctorID uuid.U
 	return args.Get(0).([]*doctorDto.AvailabilityResponse), args.Error(1)
 }
 
+func (m *MockDoctorService) InvalidateAvailabilityCache(ctx context.Context, doctorID uuid.UUID) error {
+	args := m.Called(ctx, doctorID)
+	return args.Error(0)
+}
+
 type MockWalletService struct {
 	mock.Mock
 }
@@ -201,7 +214,7 @@ func TestAppointmentService_Book(t *testing.T) {
 	mockPatient := new(MockPatientService)
 	mockDoctor := new(MockDoctorService)
 	mockWallet := new(MockWalletService)
-	svc := NewAppointmentService(mockRepo, mockPatient, mockDoctor, mockWallet, nil, 60)
+	svc := NewAppointmentService(mockRepo, mockPatient, mockDoctor, mockWallet, nil, 60, nil)
 
 	ctx := context.Background()
 	patientUserID := uuid.New()

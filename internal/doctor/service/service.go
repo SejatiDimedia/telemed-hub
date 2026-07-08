@@ -23,4 +23,5 @@ type DoctorService interface {
 	AddAvailability(ctx context.Context, doctorUserID uuid.UUID, req dto.CreateAvailabilityRequest) (*dto.AvailabilityResponse, error)
 	RemoveAvailability(ctx context.Context, doctorUserID uuid.UUID, slotID uuid.UUID) error
 	GetAvailability(ctx context.Context, doctorID uuid.UUID, startTimeStr, endTimeStr string, isBooked *bool) ([]*dto.AvailabilityResponse, error)
+	InvalidateAvailabilityCache(ctx context.Context, doctorID uuid.UUID) error
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,6 +26,7 @@ type AppointmentServiceImpl struct {
 	notificationSvc notification.NotificationService
 	consultationSvc ConsultationServiceClient
 	cutoffMinutes   int
+	log             *slog.Logger
 }
 
 func NewAppointmentService(
@@ -34,9 +36,13 @@ func NewAppointmentService(
 	walletSvc wallet.WalletService,
 	notificationSvc notification.NotificationService,
 	cutoffMinutes int,
+	log *slog.Logger,
 ) *AppointmentServiceImpl {
 	if cutoffMinutes <= 0 {
 		cutoffMinutes = 60 // default 60 minutes
+	}
+	if log == nil {
+		log = slog.Default()
 	}
 	return &AppointmentServiceImpl{
 		repo:            repo,
@@ -45,6 +51,7 @@ func NewAppointmentService(
 		walletSvc:       walletSvc,
 		notificationSvc: notificationSvc,
 		cutoffMinutes:   cutoffMinutes,
+		log:             log,
 	}
 }
 
@@ -131,6 +138,8 @@ func (s *AppointmentServiceImpl) Book(ctx context.Context, patientUserID uuid.UU
 		}
 		return nil, err
 	}
+
+	_ = s.doctorSvc.InvalidateAvailabilityCache(ctx, docUUID)
 
 	if s.consultationSvc != nil {
 		if errCons := s.consultationSvc.CreateConsultation(ctx, apt.ID); errCons != nil {
@@ -319,6 +328,7 @@ func (s *AppointmentServiceImpl) Cancel(ctx context.Context, id uuid.UUID, userI
 		_ = s.walletSvc.Refund(ctx, patOwnerUserID, docProfile.ConsultationFee, "Refund for cancelled appointment (prior to cutoff)")
 	}
 
+	_ = s.doctorSvc.InvalidateAvailabilityCache(ctx, apt.DoctorID)
 	return nil
 }
 
@@ -395,6 +405,8 @@ func (s *AppointmentServiceImpl) Reschedule(ctx context.Context, id uuid.UUID, u
 	apt.AvailabilityID = newAvailUUID
 	apt.ScheduledAt = startTime
 	apt.UpdatedAt = time.Now().UTC()
+
+	_ = s.doctorSvc.InvalidateAvailabilityCache(ctx, apt.DoctorID)
 
 	return s.toResponse(apt), nil
 }

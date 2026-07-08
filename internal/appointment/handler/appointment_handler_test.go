@@ -68,6 +68,11 @@ func (m *MockAppointmentService) SetConsultationService(consSvc service.Consulta
 	m.Called(consSvc)
 }
 
+func (m *MockAppointmentService) RunAppointmentReminderJob(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
 func TestAppointmentHandler_Book(t *testing.T) {
 	mockSvc := new(MockAppointmentService)
 	cfg := &config.Config{}

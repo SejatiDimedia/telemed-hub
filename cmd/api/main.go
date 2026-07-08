@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/timurdianradhasejati/telemed_hub/internal/admin"
@@ -33,7 +34,9 @@ import (
 	"github.com/timurdianradhasejati/telemed_hub/internal/prescription"
 	"github.com/timurdianradhasejati/telemed_hub/internal/shared"
 	"github.com/timurdianradhasejati/telemed_hub/internal/wallet"
+	"github.com/timurdianradhasejati/telemed_hub/pkg/jobs"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/logger"
+	custommw "github.com/timurdianradhasejati/telemed_hub/pkg/middleware"
 )
 
 func main() {
@@ -117,12 +120,15 @@ func main() {
 
 	// Base middleware
 	r.Use(middleware.RequestID)
+	r.Use(custommw.TraceIDMiddleware(log))
 	r.Use(middleware.RealIP)
+	r.Use(custommw.MetricsMiddleware)
 	r.Use(middlewareLogger(log))
 	r.Use(middleware.Recoverer)
 
-	// Profiler endpoints
+	// Profiler & metrics endpoints
 	r.Mount("/debug", middleware.Profiler())
+	r.Handle("/metrics", promhttp.Handler())
 
 	// Health check endpoints (no auth required)
 	healthHandler := healthcheck.NewHandler(dbPool, rdb, minioClient, log)
@@ -149,7 +155,12 @@ func main() {
 
 	// Start background workers
 	notificationMod.Start()
-	aiMod.Start()
+
+	// Start background jobs scheduler
+	scheduler := jobs.NewScheduler(log, 5)
+	scheduler.Register("ai-session-auto-close", 10*time.Minute, aiMod.Service.CloseInactiveSessions)
+	scheduler.Register("appointment-reminder", 10*time.Minute, appointmentMod.Service.RunAppointmentReminderJob)
+	scheduler.Start()
 
 	// Resolve setter DI for circular dependency
 	appointmentMod.Service.SetConsultationService(consultationMod.Service)
@@ -203,7 +214,7 @@ func main() {
 
 		// Stop background workers
 		notificationMod.Stop()
-		aiMod.Stop()
+		scheduler.Stop()
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(ctx, cfg.Server.ShutdownTimeout)
 		defer shutdownCancel()
@@ -217,8 +228,9 @@ func main() {
 	log.Info("server stopped gracefully")
 }
 
-// middlewareLogger creates a chi middleware that logs each request using slog.
-func middlewareLogger(log *slog.Logger) func(next http.Handler) http.Handler {
+// middlewareLogger creates a chi middleware that logs each request using
+// the context-enriched logger (which already carries trace_id).
+func middlewareLogger(fallback *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -228,14 +240,15 @@ func middlewareLogger(log *slog.Logger) func(next http.Handler) http.Handler {
 
 			next.ServeHTTP(ww, r)
 
-			log.Info("request completed",
+			// Use the enriched logger from context (includes trace_id automatically).
+			l := logger.FromCtx(r.Context())
+			l.Info("request completed",
 				"method", r.Method,
 				"path", r.URL.Path,
 				"status", ww.Status(),
 				"latency_ms", time.Since(start).Milliseconds(),
 				"bytes", ww.BytesWritten(),
 				"remote_addr", r.RemoteAddr,
-				"request_id", middleware.GetReqID(r.Context()),
 			)
 		})
 	}

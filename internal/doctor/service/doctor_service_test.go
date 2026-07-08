@@ -97,7 +97,7 @@ func (m *MockAuditService) Log(ctx context.Context, entry shared.AuditEntry) err
 
 func TestDoctorService_GetProfileByUserID(t *testing.T) {
 	mockRepo := new(MockDoctorRepository)
-	svc := NewDoctorService(mockRepo, nil)
+	svc := NewDoctorService(mockRepo, nil, nil)
 
 	userID := uuid.New()
 	dID := uuid.New()
@@ -131,7 +131,7 @@ func TestDoctorService_GetProfileByUserID(t *testing.T) {
 
 func TestDoctorService_UpdateProfile(t *testing.T) {
 	mockRepo := new(MockDoctorRepository)
-	svc := NewDoctorService(mockRepo, nil)
+	svc := NewDoctorService(mockRepo, nil, nil)
 
 	userID := uuid.New()
 	dID := uuid.New()
@@ -182,7 +182,7 @@ func TestDoctorService_UpdateProfile(t *testing.T) {
 func TestDoctorService_VerifyDoctor(t *testing.T) {
 	mockRepo := new(MockDoctorRepository)
 	mockAudit := new(MockAuditService)
-	svc := NewDoctorService(mockRepo, mockAudit)
+	svc := NewDoctorService(mockRepo, nil, mockAudit)
 
 	adminID := uuid.New()
 	doctorID := uuid.New()

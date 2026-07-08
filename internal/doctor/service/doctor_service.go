@@ -2,10 +2,13 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/timurdianradhasejati/telemed_hub/internal/doctor/dto"
 	"github.com/timurdianradhasejati/telemed_hub/internal/doctor/mapper"
@@ -17,12 +20,14 @@ import (
 
 type DoctorServiceImpl struct {
 	repo         repository.DoctorRepository
+	rdb          *redis.Client
 	auditService shared.AuditService
 }
 
-func NewDoctorService(repo repository.DoctorRepository, auditService shared.AuditService) *DoctorServiceImpl {
+func NewDoctorService(repo repository.DoctorRepository, rdb *redis.Client, auditService shared.AuditService) *DoctorServiceImpl {
 	return &DoctorServiceImpl{
 		repo:         repo,
+		rdb:          rdb,
 		auditService: auditService,
 	}
 }
@@ -66,6 +71,8 @@ func (s *DoctorServiceImpl) UpdateProfile(ctx context.Context, userID uuid.UUID,
 		return nil, err
 	}
 
+	_ = s.InvalidateDoctorListCache(ctx)
+
 	return mapper.ToResponse(doctor), nil
 }
 
@@ -74,6 +81,8 @@ func (s *DoctorServiceImpl) VerifyDoctor(ctx context.Context, adminUserID uuid.U
 	if err := s.repo.Verify(ctx, doctorID); err != nil {
 		return err
 	}
+
+	_ = s.InvalidateDoctorListCache(ctx)
 
 	// Write audit log entry via shared AuditService
 	if s.auditService != nil {
@@ -106,12 +115,55 @@ func (s *DoctorServiceImpl) ListDoctors(ctx context.Context, specialty *string, 
 
 	offset := (page - 1) * limit
 
+	var specStr string
+	if specialty != nil {
+		specStr = *specialty
+	}
+
+	// Try reading from cache
+	cacheKey := fmt.Sprintf("doctor:list:specialty:%s:verified:%t:sort:%s:order:%s:page:%d:limit:%d",
+		specStr, onlyVerified, sortBy, order, page, limit)
+
+	if s.rdb != nil {
+		cachedBytes, err := s.rdb.Get(ctx, cacheKey).Bytes()
+		if err == nil {
+			type CachedDoctorList struct {
+				Doctors    []*dto.DoctorResponse `json:"doctors"`
+				TotalItems int                   `json:"total_items"`
+			}
+			var cached CachedDoctorList
+			if err := json.Unmarshal(cachedBytes, &cached); err == nil {
+				return cached.Doctors, cached.TotalItems, nil
+			}
+		}
+	}
+
 	doctors, totalItems, err := s.repo.List(ctx, specialty, onlyVerified, sortBy, order, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return mapper.ToResponseList(doctors), totalItems, nil
+	respList := mapper.ToResponseList(doctors)
+
+	// Save to cache
+	if s.rdb != nil {
+		type CachedDoctorList struct {
+			Doctors    []*dto.DoctorResponse `json:"doctors"`
+			TotalItems int                   `json:"total_items"`
+		}
+		cached := CachedDoctorList{
+			Doctors:    respList,
+			TotalItems: totalItems,
+		}
+		if cachedBytes, err := json.Marshal(cached); err == nil {
+			ttl := 5 * time.Minute
+			_ = s.rdb.Set(ctx, cacheKey, cachedBytes, ttl).Err()
+			_ = s.rdb.SAdd(ctx, "doctor:list:keys", cacheKey).Err()
+			_ = s.rdb.Expire(ctx, "doctor:list:keys", ttl).Err()
+		}
+	}
+
+	return respList, totalItems, nil
 }
 
 func (s *DoctorServiceImpl) AddAvailability(ctx context.Context, doctorUserID uuid.UUID, req dto.CreateAvailabilityRequest) (*dto.AvailabilityResponse, error) {
@@ -149,6 +201,8 @@ func (s *DoctorServiceImpl) AddAvailability(ctx context.Context, doctorUserID uu
 		return nil, err
 	}
 
+	_ = s.InvalidateAvailabilityCache(ctx, doctor.ID)
+
 	return mapper.ToAvailabilityResponse(slot), nil
 }
 
@@ -160,7 +214,13 @@ func (s *DoctorServiceImpl) RemoveAvailability(ctx context.Context, doctorUserID
 	}
 
 	// 2. Perform deletion (repo checks ownership and booking status)
-	return s.repo.DeleteAvailability(ctx, doctor.ID, slotID)
+	err = s.repo.DeleteAvailability(ctx, doctor.ID, slotID)
+	if err != nil {
+		return err
+	}
+
+	_ = s.InvalidateAvailabilityCache(ctx, doctor.ID)
+	return nil
 }
 
 func (s *DoctorServiceImpl) GetAvailability(ctx context.Context, doctorID uuid.UUID, startTimeStr, endTimeStr string, isBooked *bool) ([]*dto.AvailabilityResponse, error) {
@@ -185,10 +245,91 @@ func (s *DoctorServiceImpl) GetAvailability(ctx context.Context, doctorID uuid.U
 		}
 	}
 
+	var bookedStr string
+	if isBooked != nil {
+		bookedStr = fmt.Sprintf("%t", *isBooked)
+	} else {
+		bookedStr = "nil"
+	}
+
+	// Try reading from cache
+	cacheKey := fmt.Sprintf("doctor:availability:id:%s:start:%s:end:%s:booked:%s",
+		doctorID.String(), startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), bookedStr)
+
+	if s.rdb != nil {
+		cachedBytes, err := s.rdb.Get(ctx, cacheKey).Bytes()
+		if err == nil {
+			var cached []*dto.AvailabilityResponse
+			if err := json.Unmarshal(cachedBytes, &cached); err == nil {
+				return cached, nil
+			}
+		}
+	}
+
 	slots, err := s.repo.ListAvailability(ctx, doctorID, startTime, endTime, isBooked)
 	if err != nil {
 		return nil, err
 	}
 
-	return mapper.ToAvailabilityResponseList(slots), nil
+	respList := mapper.ToAvailabilityResponseList(slots)
+
+	// Save to cache
+	if s.rdb != nil {
+		if cachedBytes, err := json.Marshal(respList); err == nil {
+			ttl := 5 * time.Minute
+			trackingKey := fmt.Sprintf("doctor:availability:keys:%s", doctorID.String())
+			_ = s.rdb.Set(ctx, cacheKey, cachedBytes, ttl).Err()
+			_ = s.rdb.SAdd(ctx, trackingKey, cacheKey).Err()
+			_ = s.rdb.Expire(ctx, trackingKey, ttl).Err()
+		}
+	}
+
+	return respList, nil
+}
+
+func (s *DoctorServiceImpl) InvalidateAvailabilityCache(ctx context.Context, doctorID uuid.UUID) error {
+	if s.rdb == nil {
+		return nil
+	}
+
+	trackingKey := fmt.Sprintf("doctor:availability:keys:%s", doctorID.String())
+	keys, err := s.rdb.SMembers(ctx, trackingKey).Result()
+	if err != nil {
+		return fmt.Errorf("failed to get availability cache keys from set: %w", err)
+	}
+
+	if len(keys) > 0 {
+		keys = append(keys, trackingKey)
+		err = s.rdb.Del(ctx, keys...).Err()
+		if err != nil {
+			return fmt.Errorf("failed to delete availability cache keys: %w", err)
+		}
+	} else {
+		_ = s.rdb.Del(ctx, trackingKey).Err()
+	}
+
+	return nil
+}
+
+func (s *DoctorServiceImpl) InvalidateDoctorListCache(ctx context.Context) error {
+	if s.rdb == nil {
+		return nil
+	}
+
+	keys, err := s.rdb.SMembers(ctx, "doctor:list:keys").Result()
+	if err != nil {
+		return fmt.Errorf("failed to get doctor list cache keys: %w", err)
+	}
+
+	if len(keys) > 0 {
+		keys = append(keys, "doctor:list:keys")
+		err = s.rdb.Del(ctx, keys...).Err()
+		if err != nil {
+			return fmt.Errorf("failed to delete doctor list cache: %w", err)
+		}
+	} else {
+		_ = s.rdb.Del(ctx, "doctor:list:keys").Err()
+	}
+
+	return nil
 }

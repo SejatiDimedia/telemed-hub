@@ -323,3 +323,30 @@ func (r *PostgresRepository) GetAvailabilityByID(ctx context.Context, id uuid.UU
 
 	return isBooked, doctorID, startTime, endTime, nil
 }
+
+func (r *PostgresRepository) GetAppointmentsByScheduledTimeRange(ctx context.Context, start, end time.Time, status string) ([]*model.Appointment, error) {
+	query := `
+		SELECT id, patient_id, doctor_id, availability_id, status, scheduled_at, cancelled_at, cancel_reason, created_at, updated_at
+		FROM appointments
+		WHERE status = $1 AND scheduled_at >= $2 AND scheduled_at <= $3
+		ORDER BY scheduled_at ASC
+	`
+	rows, err := r.db.Query(ctx, query, status, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query appointments in time range: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*model.Appointment
+	for rows.Next() {
+		var a model.Appointment
+		err := rows.Scan(
+			&a.ID, &a.PatientID, &a.DoctorID, &a.AvailabilityID, &a.Status, &a.ScheduledAt, &a.CancelledAt, &a.CancelReason, &a.CreatedAt, &a.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan appointment row: %w", err)
+		}
+		result = append(result, &a)
+	}
+	return result, nil
+}

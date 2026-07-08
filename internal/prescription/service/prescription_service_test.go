@@ -123,6 +123,9 @@ func (m *MockDoctorService) RemoveAvailability(ctx context.Context, doctorUserID
 func (m *MockDoctorService) GetAvailability(ctx context.Context, doctorID uuid.UUID, startTimeStr, endTimeStr string, isBooked *bool) ([]*doctorDTO.AvailabilityResponse, error) {
 	return nil, nil
 }
+func (m *MockDoctorService) InvalidateAvailabilityCache(ctx context.Context, doctorID uuid.UUID) error {
+	return nil
+}
 
 type MockPatientService struct{ mock.Mock }
 

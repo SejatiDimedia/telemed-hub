@@ -20,9 +20,6 @@ type AIServiceImpl struct {
 	llmClient  LLMClient
 	patientSvc patientService.PatientService
 	log        *slog.Logger
-
-	// background close ticker control
-	stopTicker chan struct{}
 }
 
 func NewAIService(
@@ -36,7 +33,6 @@ func NewAIService(
 		llmClient:  llmClient,
 		patientSvc: patientSvc,
 		log:        log,
-		stopTicker: make(chan struct{}),
 	}
 }
 
@@ -250,30 +246,16 @@ func (s *AIServiceImpl) ListSessions(ctx context.Context, patientUserID uuid.UUI
 	return resp, nil
 }
 
-// StartAutoCloseTicker runs a background task to close inactive sessions (> 24 hours)
-func (s *AIServiceImpl) StartAutoCloseTicker() {
-	ticker := time.NewTicker(10 * time.Minute)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				threshold := time.Now().Add(-24 * time.Hour).UTC()
-				closedCount, err := s.repo.CloseInactiveSessions(context.Background(), threshold)
-				if err != nil {
-					s.log.Error("failed to close inactive ai sessions", "error", err)
-				} else if closedCount > 0 {
-					s.log.Info("background job closed inactive ai sessions", "count", closedCount)
-				}
-			case <-s.stopTicker:
-				ticker.Stop()
-				return
-			}
-		}
-	}()
-}
-
-func (s *AIServiceImpl) StopTicker() {
-	close(s.stopTicker)
+func (s *AIServiceImpl) CloseInactiveSessions(ctx context.Context) error {
+	threshold := time.Now().Add(-24 * time.Hour).UTC()
+	closedCount, err := s.repo.CloseInactiveSessions(ctx, threshold)
+	if err != nil {
+		return fmt.Errorf("failed to close inactive sessions: %w", err)
+	}
+	if closedCount > 0 {
+		s.log.Info("background job closed inactive ai sessions", "count", closedCount)
+	}
+	return nil
 }
 
 // anonymizePrompt replaces patient name and UUIDs to protect patient health information (PHI)

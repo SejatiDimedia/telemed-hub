@@ -138,3 +138,7 @@ func (s *NotificationServiceImpl) MarkAsRead(
 
 	return nil
 }
+
+func (s *NotificationServiceImpl) CheckReminderSent(ctx context.Context, appointmentID uuid.UUID) (bool, error) {
+	return s.repo.CheckExistsByTypeAndPayloadKeyVal(ctx, "appointment_reminder", "appointment_id", appointmentID.String())
+}

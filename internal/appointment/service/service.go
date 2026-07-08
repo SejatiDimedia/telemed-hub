@@ -29,4 +29,5 @@ type AppointmentService interface {
 	Cancel(ctx context.Context, id uuid.UUID, userID uuid.UUID, req dto.CancelAppointmentRequest) error
 	Reschedule(ctx context.Context, id uuid.UUID, userID uuid.UUID, req dto.RescheduleAppointmentRequest) (*dto.AppointmentResponse, error)
 	SetConsultationService(consSvc ConsultationServiceClient)
+	RunAppointmentReminderJob(ctx context.Context) error
 }

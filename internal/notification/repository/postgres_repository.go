@@ -287,3 +287,18 @@ func (r *PostgresRepository) ListPendingOrFailedEligibleForRetry(ctx context.Con
 
 	return list, nil
 }
+
+func (r *PostgresRepository) CheckExistsByTypeAndPayloadKeyVal(ctx context.Context, typeStr, key, val string) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM notifications 
+			WHERE type = $1 AND payload->>$2 = $3
+		)
+	`
+	var exists bool
+	err := r.db.QueryRow(ctx, query, typeStr, key, val).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check notification existence: %w", err)
+	}
+	return exists, nil
+}

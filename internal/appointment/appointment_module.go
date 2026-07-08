@@ -31,7 +31,7 @@ func NewModule(
 	notificationSvc notification.NotificationService,
 ) *Module {
 	repo := repository.NewPostgresRepository(db)
-	svc := service.NewAppointmentService(repo, patientSvc, doctorSvc, walletSvc, notificationSvc, cfg.AppointmentCancelCutoffMinutes)
+	svc := service.NewAppointmentService(repo, patientSvc, doctorSvc, walletSvc, notificationSvc, cfg.AppointmentCancelCutoffMinutes, log)
 	h := handler.NewAppointmentHandler(svc, cfg, rdb, log)
 
 	return &Module{

@@ -16,4 +16,5 @@ type NotificationRepository interface {
 	List(ctx context.Context, userID uuid.UUID, status *string, page, limit int) ([]*model.Notification, int, error)
 	Update(ctx context.Context, n *model.Notification) error
 	ListPendingOrFailedEligibleForRetry(ctx context.Context, maxRetries int) ([]*model.Notification, error)
+	CheckExistsByTypeAndPayloadKeyVal(ctx context.Context, typeStr, key, val string) (bool, error)
 }

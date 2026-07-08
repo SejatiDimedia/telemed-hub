@@ -147,7 +147,7 @@ Sprints are assumed to be **1–2 weeks** each, part-time pace, consistent with 
 | **Deliverables** | Benchmark report; P95 latency targets from `01-product-requirements.md` met |
 | **Estimated Duration** | 3–5 days |
 
-## Sprint 13 — Background Workers
+## Sprint 13 — Background Workers (✅ Completed)
 
 | | |
 |---|---|
@@ -158,7 +158,7 @@ Sprints are assumed to be **1–2 weeks** each, part-time pace, consistent with 
 | **Deliverables** | Reminder jobs running reliably on a schedule |
 | **Estimated Duration** | 1 week |
 
-## Sprint 14 — Redis
+## Sprint 14 — Redis (✅ Completed)
 
 | | |
 |---|---|
@@ -169,7 +169,7 @@ Sprints are assumed to be **1–2 weeks** each, part-time pace, consistent with 
 | **Deliverables** | Measured latency improvement on cached endpoints |
 | **Estimated Duration** | 3–5 days |
 
-## Sprint 15 — Observability
+## Sprint 15 — Observability (✅ Completed)
 
 | | |
 |---|---|

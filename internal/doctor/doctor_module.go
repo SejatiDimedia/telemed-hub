@@ -22,7 +22,7 @@ type Module struct {
 // NewModule constructs the repository, service, and handler layers for Doctor.
 func NewModule(db *pgxpool.Pool, rdb *redis.Client, cfg *config.Config, auditService shared.AuditService, logger *slog.Logger) *Module {
 	repo := repository.NewPostgresRepository(db)
-	svc := service.NewDoctorService(repo, auditService)
+	svc := service.NewDoctorService(repo, rdb, auditService)
 	h := handler.NewDoctorHandler(svc, cfg, rdb, logger)
 
 	return &Module{

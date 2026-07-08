@@ -19,7 +19,7 @@ import (
 
 func TestDoctorService_AddAvailability(t *testing.T) {
 	mockRepo := new(MockDoctorRepository)
-	svc := NewDoctorService(mockRepo, nil)
+	svc := NewDoctorService(mockRepo, nil, nil)
 
 	doctorUserID := uuid.New()
 	doctorID := uuid.New()
@@ -79,7 +79,7 @@ func TestDoctorService_AddAvailability(t *testing.T) {
 
 func TestDoctorService_RemoveAvailability(t *testing.T) {
 	mockRepo := new(MockDoctorRepository)
-	svc := NewDoctorService(mockRepo, nil)
+	svc := NewDoctorService(mockRepo, nil, nil)
 
 	doctorUserID := uuid.New()
 	doctorID := uuid.New()

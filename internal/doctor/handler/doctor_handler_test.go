@@ -81,6 +81,11 @@ func (m *MockDoctorService) GetAvailability(ctx context.Context, doctorID uuid.U
 	return args.Get(0).([]*dto.AvailabilityResponse), args.Error(1)
 }
 
+func (m *MockDoctorService) InvalidateAvailabilityCache(ctx context.Context, doctorID uuid.UUID) error {
+	args := m.Called(ctx, doctorID)
+	return args.Error(0)
+}
+
 func TestDoctorHandler_GetByID(t *testing.T) {
 	mockSvc := new(MockDoctorService)
 	cfg := &config.Config{}

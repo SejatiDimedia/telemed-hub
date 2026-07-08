@@ -171,7 +171,7 @@ func TestPostgresRepository_MedicineOperations(t *testing.T) {
 				// Check and decrement stock
 				if m.StockQuantity >= 1 {
 					m.StockQuantity -= 1
-					err = repo.Update(ctx, m)
+					err = repo.UpdateStock(ctx, tx, medID, m.StockQuantity)
 					if err == nil {
 						err = tx.Commit(ctx)
 						if err == nil {

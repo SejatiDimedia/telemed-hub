@@ -39,6 +39,11 @@ func (m *MockNotificationService) MarkAsRead(ctx context.Context, userID uuid.UU
 	return args.Error(0)
 }
 
+func (m *MockNotificationService) CheckReminderSent(ctx context.Context, appointmentID uuid.UUID) (bool, error) {
+	args := m.Called(ctx, appointmentID)
+	return args.Bool(0), args.Error(1)
+}
+
 func newTestHandler(svc *MockNotificationService) (*NotificationHandler, chi.Router) {
 	cfg := &config.Config{}
 	h := NewNotificationHandler(svc, cfg, nil)

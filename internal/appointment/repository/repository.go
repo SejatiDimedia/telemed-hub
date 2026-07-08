@@ -22,4 +22,5 @@ type AppointmentRepository interface {
 	UpdateStatusWithLock(ctx context.Context, id uuid.UUID, status string, cancelReason *string) error
 	RescheduleWithLock(ctx context.Context, id uuid.UUID, newAvailabilityID uuid.UUID, scheduledAt time.Time) error
 	GetAvailabilityByID(ctx context.Context, id uuid.UUID) (isBooked bool, doctorID uuid.UUID, startTime time.Time, endTime time.Time, err error)
+	GetAppointmentsByScheduledTimeRange(ctx context.Context, start, end time.Time, status string) ([]*model.Appointment, error)
 }

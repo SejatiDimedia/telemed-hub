@@ -34,15 +34,3 @@ func NewModule(
 		Service: svc,
 	}
 }
-
-func (m *Module) Start() {
-	if impl, ok := m.Service.(*service.AIServiceImpl); ok {
-		impl.StartAutoCloseTicker()
-	}
-}
-
-func (m *Module) Stop() {
-	if impl, ok := m.Service.(*service.AIServiceImpl); ok {
-		impl.StopTicker()
-	}
-}

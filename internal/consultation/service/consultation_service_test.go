@@ -88,6 +88,11 @@ func (m *MockAppointmentService) SetConsultationService(consSvc appointmentServi
 	m.Called(consSvc)
 }
 
+func (m *MockAppointmentService) RunAppointmentReminderJob(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
 func TestConsultationService_Start(t *testing.T) {
 	mockRepo := new(MockConsultationRepository)
 	mockApt := new(MockAppointmentService)

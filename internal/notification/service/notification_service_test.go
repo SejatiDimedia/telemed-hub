@@ -54,6 +54,11 @@ func (m *MockNotificationRepository) ListPendingOrFailedEligibleForRetry(ctx con
 	return args.Get(0).([]*model.Notification), args.Error(1)
 }
 
+func (m *MockNotificationRepository) CheckExistsByTypeAndPayloadKeyVal(ctx context.Context, typeStr, key, val string) (bool, error) {
+	args := m.Called(ctx, typeStr, key, val)
+	return args.Bool(0), args.Error(1)
+}
+
 var _ repository.NotificationRepository = (*MockNotificationRepository)(nil)
 
 func setupTestRedis(t *testing.T) (*redis.Client, func()) {

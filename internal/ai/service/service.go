@@ -19,4 +19,5 @@ type AIService interface {
 	PostMessage(ctx context.Context, patientUserID uuid.UUID, sessionID uuid.UUID, message string) (*dto.TriageResponse, error)
 	GetSession(ctx context.Context, userID uuid.UUID, roles []string, sessionID uuid.UUID) (*dto.SessionResponse, error)
 	ListSessions(ctx context.Context, patientUserID uuid.UUID) ([]*dto.SessionResponse, error)
+	CloseInactiveSessions(ctx context.Context) error
 }

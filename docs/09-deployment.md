@@ -119,6 +119,48 @@ For Sprint 18 (Production Deployment), the recommended path is the simplest one 
 
 Object storage (MinIO locally) maps directly to a cloud provider's S3-compatible service in production — no code change, only endpoint/credential config change, because the `file` module already speaks the S3 API.
 
+### 5.1 Runbook: Single VM + Docker Compose Deployment
+
+#### Langkah 1: Persiapan Server VM
+1. Sewa VM (e.g., AWS EC2, DigitalOcean Droplet, GCP VM Instance) berbasis Ubuntu LTS.
+2. Pasang Docker & Docker Compose v2 di server target:
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y docker.io docker-compose-v2
+   sudo systemctl enable --now docker
+   ```
+
+#### Langkah 2: Konfigurasi Secrets (`.env`)
+Buat berkas `/app/telemed_hub/.env` di server (pastikan permission berkas ketat, `chmod 600 .env`):
+```ini
+# Application
+HTTP_PORT=8080
+JWT_SECRET=gunakan-key-32-byte-secure-dan-random-base64
+
+# PostgreSQL
+POSTGRES_USER=telemedhub_prod
+POSTGRES_PASSWORD=password-db-sangat-kuat-123
+POSTGRES_DB=telemedhub
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# Database Connection (digunakan oleh API)
+DATABASE_URL=postgres://telemedhub_prod:password-db-sangat-kuat-123@postgres:5432/telemedhub?sslmode=disable
+
+# MinIO (S3-compatible storage)
+MINIO_ENDPOINT=minio:9000
+MINIO_ACCESS_KEY=akseskey-minio-prod
+MINIO_SECRET_KEY=secretkey-minio-prod-sangat-rahasia
+```
+
+#### Langkah 3: Eksekusi Deployment
+Jalankan command Docker Compose berikut di server:
+```bash
+docker-compose -f deployments/docker-compose.prod.yml --env-file .env up -d
+```
+Container akan otomatis melakukan build image secara aman, mengaitkan volume persistensi data, menerapkan resource limit CPU/memori, dan me-restart container secara otomatis jika terjadi kegagalan.
+
 ---
 
 ## 6. Deployment Evolution Summary

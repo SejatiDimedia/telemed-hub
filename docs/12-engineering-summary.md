@@ -53,6 +53,12 @@ flowchart LR
 | Sprint 10 (Notification) | ✅ Completed | Asynchronous, durable notification dispatching using Redis Streams, worker pool, and exponential backoff |
 | Sprint 11 (AI Assistant) | ✅ Completed | Symptom triage API with Gemini LLM integration, circuit breaker fallbacks, PHI protection, and inactivity closures |
 | Sprint 12 (Performance) | ✅ Completed | Database index verification pass, mounted Go live pprof endpoints, and concurrent load testing P95 verification |
+| Sprint 13 (Background Workers) | ✅ Completed | Generic scheduler, periodic reminder jobs with double-sending prevention |
+| Sprint 14 (Redis Caching) | ✅ Completed | Cache-aside reads for ListDoctors/GetAvailability, Redis sets registry-based cache invalidation |
+| Sprint 15 (Observability) | ✅ Completed | Context-aware slog correlation via trace_id, Prometheus metrics middleware, and /metrics endpoint |
+| Sprint 16 (Service Extraction) | ⏭️ Skipped | gRPC/microservice POC skipped to maintain clean Modular Monolith architecture |
+| Sprint 17 (Microservice Prep) | ⏭️ Skipped | Microservice contracts/discovery skipped to maintain clean Modular Monolith architecture |
+| Sprint 18 (Production Deploy) | ✅ Completed | GitHub Actions CI pipeline, production docker-compose limits/security configuration, VM runbook |
 
 **All 5 architecture review blockers resolved** (see `architecture_review.md` for original findings).
 

@@ -202,7 +202,7 @@ Sprints are assumed to be **1–2 weeks** each, part-time pace, consistent with 
 | **Deliverables** | `11-future-roadmap.md`-aligned extraction plan; no further modules extracted yet unless justified by real load |
 | **Estimated Duration** | 1 week |
 
-## Sprint 18 — Production Deployment
+## Sprint 18 — Production Deployment (✅ Completed)
 
 | | |
 |---|---|
@@ -225,17 +225,17 @@ Sprints are assumed to be **1–2 weeks** each, part-time pace, consistent with 
 | 5 | Consultation | ✅ Completed | 4 |
 | 6 | Prescription | ✅ Completed | 5 |
 | 7 | Inventory | ✅ Completed | — (parallel-safe) |
-| 8 | Wallet | ⏳ Next | 6, 7 |
-| 9 | Medical Records | ⏳ Pending | 5 |
-| 10 | Notification | ⏳ Pending | 4, 8 |
-| 11 | AI Assistant | ⏳ Pending | 2 |
-| 12 | Performance | ⏳ Pending | 1–11 |
-| 13 | Background Workers | ⏳ Pending | 10 |
-| 14 | Redis | ⏳ Pending | 3, 12 |
-| 15 | Observability | ⏳ Pending | all prior |
-| 16 | Service Extraction | ⏳ Pending | 10, 15 |
-| 17 | Microservice Preparation | ⏳ Pending | 16 |
-| 18 | Production Deployment | ⏳ Pending | 15 |
+| 8 | Wallet | ✅ Completed | 6, 7 |
+| 9 | Medical Records | ✅ Completed | 5 |
+| 10 | Notification | ✅ Completed | 4, 8 |
+| 11 | AI Assistant | ✅ Completed | 2 |
+| 12 | Performance | ✅ Completed | 1–11 |
+| 13 | Background Workers | ✅ Completed | 10 |
+| 14 | Redis | ✅ Completed | 3, 12 |
+| 15 | Observability | ✅ Completed | all prior |
+| 16 | Service Extraction | ⏭️ Skipped | 10, 15 |
+| 17 | Microservice Preparation | ⏭️ Skipped | 16 |
+| 18 | Production Deployment | ✅ Completed | 15 |
 
 ---
 

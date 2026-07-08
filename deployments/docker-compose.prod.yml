@@ -1,0 +1,123 @@
+# =============================================================================
+# TeleMedHub — Docker Compose (Production Deployment)
+# =============================================================================
+# Usage: docker-compose -f deployments/docker-compose.prod.yml up -d
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # API — TeleMedHub Go application
+  # ---------------------------------------------------------------------------
+  api:
+    container_name: telemedhub_api
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    environment:
+      APP_ENV: production
+      APP_NAME: telemedhub
+      HTTP_PORT: 8080
+      LOG_LEVEL: info
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-telemedhub}
+      JWT_SECRET: ${JWT_SECRET}
+      SHUTDOWN_TIMEOUT_SECONDS: 15
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL
+  # ---------------------------------------------------------------------------
+  postgres:
+    container_name: telemedhub_postgres
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432" # Bind to localhost only in prod for safety
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-telemedhub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-telemedhub}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-telemedhub} -d ${POSTGRES_DB:-telemedhub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  # ---------------------------------------------------------------------------
+  # Redis
+  # ---------------------------------------------------------------------------
+  redis:
+    container_name: telemedhub_redis
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379" # Bind to localhost only in prod for safety
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # MinIO — S3-compatible object storage
+  # ---------------------------------------------------------------------------
+  minio:
+    container_name: telemedhub_minio
+    image: minio/minio
+    ports:
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"   # API
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001" # Console UI
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_prod_data:/data
+    command: server /data --console-address ":9001"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  minio_prod_data:

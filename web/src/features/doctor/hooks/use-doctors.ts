@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { doctorApi } from "../api/doctor-api";
+import { useToastStore } from "../../../stores/toast-store";
 
 export const doctorKeys = {
   all: ["doctors"] as const,
@@ -39,5 +40,64 @@ export function useDoctorProfileMe() {
     queryKey: doctorKeys.me(),
     queryFn: doctorApi.getMe,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useCreateAvailability() {
+  const queryClient = useQueryClient();
+  const addToast = useToastStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: (data: { start_time: string; end_time: string }) =>
+      doctorApi.createAvailability(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: doctorKeys.all });
+      addToast({
+        type: "success",
+        title: "Jadwal Ditambahkan",
+        message: "Slot ketersediaan berhasil didaftarkan.",
+      });
+    },
+  });
+}
+
+export function useDeleteAvailability() {
+  const queryClient = useQueryClient();
+  const addToast = useToastStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: (slotId: string) => doctorApi.deleteAvailability(slotId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: doctorKeys.all });
+      addToast({
+        type: "success",
+        title: "Jadwal Dihapus",
+        message: "Slot ketersediaan berhasil dihapus.",
+      });
+    },
+  });
+}
+
+export function useUpdateDoctorProfile() {
+  const queryClient = useQueryClient();
+  const addToast = useToastStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: (data: Partial<Parameters<typeof doctorApi.updateMe>[0]>) => doctorApi.updateMe(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: doctorKeys.me() });
+      addToast({
+        type: "success",
+        title: "Profil Diperbarui",
+        message: "Profil praktek medis Anda berhasil disimpan.",
+      });
+    },
+    onError: (error: any) => {
+      addToast({
+        type: "error",
+        title: "Gagal Memperbarui Profil",
+        message: error instanceof Error ? error.message : "Terjadi kesalahan pada server.",
+      });
+    },
   });
 }

@@ -21,6 +21,7 @@ const patientNavItems = [
   { label: "Appointments", icon: "event", to: "/patient/appointments" },
   { label: "Medical Records", icon: "folder_shared", to: "/patient/records" },
   { label: "Digital Wallet", icon: "account_balance_wallet", to: "/patient/wallet" },
+  { label: "Settings", icon: "settings", to: "/patient/settings" },
 ];
 
 function PatientLayout() {

@@ -20,7 +20,7 @@ flowchart TD
 
 ## 📋 Rincian Detail Sprint Frontend
 
-### 🏃 Sprint 1: Patient Dashboard (`/patient/*`)
+### 🏃 Sprint 1: Patient Dashboard (`/patient/*`) — [✅ Selesai / Completed]
 *   **Tujuan:** Membangun beranda utama pasien untuk memberikan ringkasan status kesehatan dan keuangan secara sekilas.
 *   **Template Visual:** [PatientPortal.html](file:///Users/timurdianradhasejati/Programming/Code/Golang/telemed_hub/web/design-reference/PatientPortal.html) (bagian dashboard ringkasan).
 *   **Penyelarasan API (Backend):**
@@ -31,7 +31,7 @@ flowchart TD
 
 ---
 
-### 🏃 Sprint 2: Digital Wallet & Transactions (`/patient/wallet`)
+### 🏃 Sprint 2: Digital Wallet & Transactions (`/patient/wallet`) — [✅ Selesai / Completed]
 *   **Tujuan:** Menyediakan sistem keuangan internal pasien untuk pembayaran janji temu medis & penebusan resep obat secara aman.
 *   **Template Visual:** [DigitalWallet.html](file:///Users/timurdianradhasejati/Programming/Code/Golang/telemed_hub/web/design-reference/DigitalWallet.html).
 *   **Penyelarasan API (Backend):**
@@ -43,7 +43,7 @@ flowchart TD
 
 ---
 
-### 🏃 Sprint 3: Doctor Search & Booking Flow (`/patient/appointments`)
+### 🏃 Sprint 3: Doctor Search & Booking Flow (`/patient/appointments`) — [✅ Selesai / Completed]
 *   **Tujuan:** Membangun modul pencarian dokter spesialis dan alur reservasi jadwal (booking) dengan proteksi double-booking.
 *   **Template Visual:** [PatientPortal.html](file:///Users/timurdianradhasejati/Programming/Code/Golang/telemed_hub/web/design-reference/PatientPortal.html) (bagian pencarian dokter & slot).
 *   **Penyelarasan API (Backend):**
@@ -55,7 +55,7 @@ flowchart TD
 
 ---
 
-### 🏃 Sprint 4: Doctor Workspace & Queue (`/doctor/*`)
+### 🏃 Sprint 4: Doctor Workspace & Queue (`/doctor/*`) — [🔄 Sedang Berjalan / Active]
 *   **Tujuan:** Menyediakan portal kerja terintegrasi bagi dokter untuk mengelola availability slots, melihat antrean harian, dan melangsungkan sesi konsultasi.
 *   **Template Visual:** Komponen antarmuka antrean resep dan rekam medis di [MedicalRecord.html](file:///Users/timurdianradhasejati/Programming/Code/Golang/telemed_hub/web/design-reference/MedicalRecord.html).
 *   **Penyelarasan API (Backend):**

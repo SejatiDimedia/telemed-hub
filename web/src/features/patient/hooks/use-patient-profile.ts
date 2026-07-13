@@ -6,6 +6,7 @@ import { useToastStore } from "../../../stores/toast-store";
 export const patientKeys = {
   all: ["patients"] as const,
   profile: () => [...patientKeys.all, "profile"] as const,
+  detail: (id: string) => [...patientKeys.all, "detail", id] as const,
 };
 
 export function usePatientProfile() {
@@ -37,5 +38,13 @@ export function useUpdatePatientProfile() {
         message: error instanceof Error ? error.message : "Terjadi kesalahan pada server.",
       });
     },
+  });
+}
+
+export function usePatientProfileById(id: string) {
+  return useQuery({
+    queryKey: patientKeys.detail(id),
+    queryFn: () => patientApi.getById(id),
+    enabled: !!id,
   });
 }

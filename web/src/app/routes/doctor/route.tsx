@@ -19,6 +19,7 @@ export const Route = createFileRoute("/doctor")({
 const doctorNavItems = [
   { label: "Dashboard", icon: "dashboard", to: "/doctor" },
   { label: "Manage Schedule", icon: "calendar_today", to: "/doctor/schedule" },
+  { label: "Settings", icon: "settings", to: "/doctor/settings" },
 ];
 
 function DoctorLayout() {

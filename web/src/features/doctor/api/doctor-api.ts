@@ -14,7 +14,19 @@ export const doctorApi = {
     return apiClient.get<DoctorProfile>("/doctors/me");
   },
 
+  updateMe: (data: Partial<DoctorProfile>): Promise<DoctorProfile> => {
+    return apiClient.put<DoctorProfile>("/doctors/me", data);
+  },
+
   getAvailability: (id: string): Promise<Availability[]> => {
     return apiClient.get<Availability[]>(`/doctors/${id}/availability`);
+  },
+
+  createAvailability: (data: { start_time: string; end_time: string }): Promise<Availability> => {
+    return apiClient.post<Availability>("/doctors/me/availability", data);
+  },
+
+  deleteAvailability: (slotId: string): Promise<void> => {
+    return apiClient.delete<void>(`/doctors/me/availability/${slotId}`);
   },
 };

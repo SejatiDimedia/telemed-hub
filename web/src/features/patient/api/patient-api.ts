@@ -9,4 +9,8 @@ export const patientApi = {
   updateMe: (data: UpdatePatientRequest): Promise<PatientProfile> => {
     return apiClient.put<PatientProfile>("/patients/me", data);
   },
+
+  getById: (id: string): Promise<PatientProfile> => {
+    return apiClient.get<PatientProfile>(`/patients/${id}`);
+  },
 };

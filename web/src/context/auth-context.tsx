@@ -50,15 +50,17 @@ function decodeJwtPayload(token: string): AuthUser | null {
       user_id?: string;
       email?: string;
       role?: string;
+      roles?: string[];
     };
 
     const id = decoded.sub ?? decoded.user_id;
-    if (!id || !decoded.email || !decoded.role) return null;
+    const role = decoded.role ?? decoded.roles?.[0];
+    if (!id || !decoded.email || !role) return null;
 
     return {
       id,
       email: decoded.email,
-      role: decoded.role as UserRole,
+      role: role as UserRole,
     };
   } catch {
     return null;

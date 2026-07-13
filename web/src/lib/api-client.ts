@@ -71,14 +71,26 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
 }
 
+interface RawApiResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+  error?: string;
+  error_code?: string;
+}
+
 async function parseErrorResponse(res: Response): Promise<ApiError> {
   try {
-    const json = (await res.json()) as { error?: ApiErrorBody };
-    if (json.error) {
-      return new ApiError(res.status, json.error);
+    const json = (await res.json()) as RawApiResponse;
+    if (json.error || json.error_code) {
+      return new ApiError(res.status, {
+        code: json.error_code ?? "UNKNOWN_ERROR",
+        message: json.error ?? `Request failed with status ${res.status.toString()}`,
+        details: Array.isArray(json.data) ? json.data : undefined,
+      });
     }
   } catch {
-    // Response bukan JSON — buat error generik
+    // Response bukan JSON
   }
   return new ApiError(res.status, {
     code: "UNKNOWN_ERROR",
@@ -98,10 +110,11 @@ async function refreshAccessToken(): Promise<boolean> {
 
     if (!res.ok) return false;
 
-    const data = (await res.json()) as {
+    const json = (await res.json()) as {
+      success: boolean;
       data: { access_token: string; refresh_token: string };
     };
-    setTokens(data.data.access_token, data.data.refresh_token);
+    setTokens(json.data.access_token, json.data.refresh_token);
     return true;
   } catch {
     return false;
@@ -148,7 +161,11 @@ async function request<T>(
     return undefined as T;
   }
 
-  return (await res.json()) as T;
+  const json = (await res.json()) as { success?: boolean; data?: any };
+  if (json && typeof json === "object" && json.success === true && "data" in json) {
+    return json.data as T;
+  }
+  return json as T;
 }
 
 // ---------------------------------------------------------------------------

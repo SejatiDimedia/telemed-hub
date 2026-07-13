@@ -1,1 +1,141 @@
 @import "tailwindcss";
+
+@theme {
+  /* Colors - Material Design 3 Palette */
+  --color-primary: #00676a;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #008286;
+  --color-on-primary-container: #f3ffff;
+  --color-primary-fixed: #8ff2f7;
+  --color-primary-fixed-dim: #72d6db;
+  --color-on-primary-fixed: #002021;
+  --color-on-primary-fixed-variant: #004f52;
+  --color-inverse-primary: #72d6db;
+
+  --color-secondary: #006b5f;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #6df5e1;
+  --color-on-secondary-container: #006f64;
+  --color-secondary-fixed: #71f8e4;
+  --color-secondary-fixed-dim: #4fdbc8;
+  --color-on-secondary-fixed: #00201c;
+  --color-on-secondary-fixed-variant: #005048;
+
+  --color-tertiary: #005f9d;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #0079c4;
+  --color-on-tertiary-container: #fdfcff;
+  --color-tertiary-fixed: #d0e4ff;
+  --color-tertiary-fixed-dim: #9ccaff;
+  --color-on-tertiary-fixed: #001d35;
+  --color-on-tertiary-fixed-variant: #00497a;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-background: #f9f9ff;
+  --color-on-background: #111c2d;
+
+  --color-surface: #f9f9ff;
+  --color-on-surface: #111c2d;
+  --color-surface-variant: #d8e3fb;
+  --color-on-surface-variant: #3d4949;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-dim: #cfdaf2;
+  --color-surface-tint: #00696d;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f3ff;
+  --color-surface-container: #e7eeff;
+  --color-surface-container-high: #dee8ff;
+  --color-surface-container-highest: #d8e3fb;
+  --color-inverse-surface: #263143;
+  --color-inverse-on-surface: #ecf1ff;
+
+  --color-outline: #6e797a;
+  --color-outline-variant: #bdc9c9;
+
+  /* Spacing Scale */
+  --spacing-base: 8px;
+  --spacing-gutter: 24px;
+  --spacing-section-padding: 64px;
+  --spacing-card-padding: 24px;
+  --spacing-container-margin: 32px;
+
+  /* Border Radius */
+  --radius-card: 20px;
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* Font Families */
+  --font-body: "Be Vietnam Pro", sans-serif;
+  --font-headline: "Playfair Display", serif;
+  --font-display: "Playfair Display", serif;
+
+  /* Custom Font Sizes (from Stitch spec) */
+  --text-body-sm: 14px;
+  --text-body-md: 16px;
+  --text-body-lg: 18px;
+  --text-label-sm: 12px;
+  --text-label-md: 14px;
+  --text-headline-sm: 20px;
+  --text-headline-md: 24px;
+  --text-headline-lg: 32px;
+  --text-display-lg: 48px;
+
+  /* Custom Shadows */
+  --shadow-level-1: 0 4px 20px rgba(11, 138, 143, 0.08);
+  --shadow-level-2: 0 8px 30px rgba(11, 138, 143, 0.12);
+}
+
+/* Custom Utilities */
+@utility clinical-gradient {
+  background: linear-gradient(135deg, rgba(249, 249, 255, 0.95) 0%, rgba(240, 249, 250, 0.95) 100%);
+}
+
+@utility glass-overlay {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Material Symbols Icon helper */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+/* Standard HTML overrides */
+body {
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headline);
+  font-weight: 600;
+}

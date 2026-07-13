@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const rolesList = ["patient", "doctor"] as const;
+
 // Zod schemas for validation
 export const loginSchema = z.object({
   email: z.string().email("Format email tidak valid"),
@@ -10,8 +12,8 @@ export const registerSchema = z
   .object({
     full_name: z.string().min(2, "Nama lengkap minimal 2 karakter"),
     email: z.string().email("Format email tidak valid"),
-    role: z.enum(["patient", "doctor"], {
-      errorMap: () => ({ message: "Role harus diisi (Patient atau Doctor)" }),
+    role: z.enum(rolesList, {
+      message: "Role harus diisi (Patient atau Doctor)",
     }),
     password: z
       .string()

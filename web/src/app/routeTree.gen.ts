@@ -19,6 +19,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PatientIndexRouteImport } from './routes/patient/index'
 import { Route as DoctorIndexRouteImport } from './routes/doctor/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as PatientWalletRouteImport } from './routes/patient/wallet'
+import { Route as PatientRecordsRouteImport } from './routes/patient/records'
+import { Route as PatientAppointmentsRouteImport } from './routes/patient/appointments'
+import { Route as DoctorScheduleRouteImport } from './routes/doctor/schedule'
 import { Route as DevComponentsRouteImport } from './routes/_dev/components'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -70,6 +74,26 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const PatientWalletRoute = PatientWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => PatientRouteRoute,
+} as any)
+const PatientRecordsRoute = PatientRecordsRouteImport.update({
+  id: '/records',
+  path: '/records',
+  getParentRoute: () => PatientRouteRoute,
+} as any)
+const PatientAppointmentsRoute = PatientAppointmentsRouteImport.update({
+  id: '/appointments',
+  path: '/appointments',
+  getParentRoute: () => PatientRouteRoute,
+} as any)
+const DoctorScheduleRoute = DoctorScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => DoctorRouteRoute,
+} as any)
 const DevComponentsRoute = DevComponentsRouteImport.update({
   id: '/components',
   path: '/components',
@@ -84,6 +108,10 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/components': typeof DevComponentsRoute
+  '/doctor/schedule': typeof DoctorScheduleRoute
+  '/patient/appointments': typeof PatientAppointmentsRoute
+  '/patient/records': typeof PatientRecordsRoute
+  '/patient/wallet': typeof PatientWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/doctor/': typeof DoctorIndexRoute
   '/patient/': typeof PatientIndexRoute
@@ -93,6 +121,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/components': typeof DevComponentsRoute
+  '/doctor/schedule': typeof DoctorScheduleRoute
+  '/patient/appointments': typeof PatientAppointmentsRoute
+  '/patient/records': typeof PatientRecordsRoute
+  '/patient/wallet': typeof PatientWalletRoute
   '/admin': typeof AdminIndexRoute
   '/doctor': typeof DoctorIndexRoute
   '/patient': typeof PatientIndexRoute
@@ -107,6 +139,10 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_dev/components': typeof DevComponentsRoute
+  '/doctor/schedule': typeof DoctorScheduleRoute
+  '/patient/appointments': typeof PatientAppointmentsRoute
+  '/patient/records': typeof PatientRecordsRoute
+  '/patient/wallet': typeof PatientWalletRoute
   '/admin/': typeof AdminIndexRoute
   '/doctor/': typeof DoctorIndexRoute
   '/patient/': typeof PatientIndexRoute
@@ -121,6 +157,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/components'
+    | '/doctor/schedule'
+    | '/patient/appointments'
+    | '/patient/records'
+    | '/patient/wallet'
     | '/admin/'
     | '/doctor/'
     | '/patient/'
@@ -130,6 +170,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/components'
+    | '/doctor/schedule'
+    | '/patient/appointments'
+    | '/patient/records'
+    | '/patient/wallet'
     | '/admin'
     | '/doctor'
     | '/patient'
@@ -143,6 +187,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/_dev/components'
+    | '/doctor/schedule'
+    | '/patient/appointments'
+    | '/patient/records'
+    | '/patient/wallet'
     | '/admin/'
     | '/doctor/'
     | '/patient/'
@@ -230,6 +278,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/patient/wallet': {
+      id: '/patient/wallet'
+      path: '/wallet'
+      fullPath: '/patient/wallet'
+      preLoaderRoute: typeof PatientWalletRouteImport
+      parentRoute: typeof PatientRouteRoute
+    }
+    '/patient/records': {
+      id: '/patient/records'
+      path: '/records'
+      fullPath: '/patient/records'
+      preLoaderRoute: typeof PatientRecordsRouteImport
+      parentRoute: typeof PatientRouteRoute
+    }
+    '/patient/appointments': {
+      id: '/patient/appointments'
+      path: '/appointments'
+      fullPath: '/patient/appointments'
+      preLoaderRoute: typeof PatientAppointmentsRouteImport
+      parentRoute: typeof PatientRouteRoute
+    }
+    '/doctor/schedule': {
+      id: '/doctor/schedule'
+      path: '/schedule'
+      fullPath: '/doctor/schedule'
+      preLoaderRoute: typeof DoctorScheduleRouteImport
+      parentRoute: typeof DoctorRouteRoute
+    }
     '/_dev/components': {
       id: '/_dev/components'
       path: '/components'
@@ -253,10 +329,12 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
 )
 
 interface DoctorRouteRouteChildren {
+  DoctorScheduleRoute: typeof DoctorScheduleRoute
   DoctorIndexRoute: typeof DoctorIndexRoute
 }
 
 const DoctorRouteRouteChildren: DoctorRouteRouteChildren = {
+  DoctorScheduleRoute: DoctorScheduleRoute,
   DoctorIndexRoute: DoctorIndexRoute,
 }
 
@@ -265,10 +343,16 @@ const DoctorRouteRouteWithChildren = DoctorRouteRoute._addFileChildren(
 )
 
 interface PatientRouteRouteChildren {
+  PatientAppointmentsRoute: typeof PatientAppointmentsRoute
+  PatientRecordsRoute: typeof PatientRecordsRoute
+  PatientWalletRoute: typeof PatientWalletRoute
   PatientIndexRoute: typeof PatientIndexRoute
 }
 
 const PatientRouteRouteChildren: PatientRouteRouteChildren = {
+  PatientAppointmentsRoute: PatientAppointmentsRoute,
+  PatientRecordsRoute: PatientRecordsRoute,
+  PatientWalletRoute: PatientWalletRoute,
   PatientIndexRoute: PatientIndexRoute,
 }
 

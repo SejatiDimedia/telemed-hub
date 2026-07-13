@@ -37,15 +37,19 @@ export class ApiError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Token storage (in-memory — bukan localStorage, sesuai 16-frontend-architecture.md)
+// ---------------------------------------------------------------------------
+// Token storage (in-memory access token, persistent refresh token in localStorage)
 // ---------------------------------------------------------------------------
 
 let accessToken: string | null = null;
-let refreshToken: string | null = null;
+let refreshToken: string | null = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
 
 export function setTokens(access: string, refresh: string): void {
   accessToken = access;
   refreshToken = refresh;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("refresh_token", refresh);
+  }
 }
 
 export function getAccessToken(): string | null {
@@ -55,6 +59,9 @@ export function getAccessToken(): string | null {
 export function clearTokens(): void {
   accessToken = null;
   refreshToken = null;
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("refresh_token");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -98,17 +105,21 @@ async function parseErrorResponse(res: Response): Promise<ApiError> {
   });
 }
 
-async function refreshAccessToken(): Promise<boolean> {
-  if (!refreshToken) return false;
+export async function refreshAccessToken(): Promise<boolean> {
+  const currentRefresh = refreshToken ?? (typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null);
+  if (!currentRefresh) return false;
 
   try {
     const res = await fetch(`${BASE_URL}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      body: JSON.stringify({ refresh_token: currentRefresh }),
     });
 
-    if (!res.ok) return false;
+    if (!res.ok) {
+      clearTokens();
+      return false;
+    }
 
     const json = (await res.json()) as {
       success: boolean;

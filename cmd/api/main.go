@@ -120,6 +120,7 @@ func main() {
 
 	// Base middleware
 	r.Use(middleware.RequestID)
+	r.Use(custommw.CORS)
 	r.Use(custommw.TraceIDMiddleware(log))
 	r.Use(middleware.RealIP)
 	r.Use(custommw.MetricsMiddleware)

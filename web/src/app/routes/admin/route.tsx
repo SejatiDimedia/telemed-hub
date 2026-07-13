@@ -1,9 +1,13 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: ({ context }) => {
-    const _ctx = context;
-    void _ctx;
+    if (!context.auth.isAuthenticated) {
+      throw redirect({ to: "/login" });
+    }
+    if (context.auth.user?.role !== "admin") {
+      throw redirect({ to: "/login" });
+    }
   },
   component: AdminLayout,
 });

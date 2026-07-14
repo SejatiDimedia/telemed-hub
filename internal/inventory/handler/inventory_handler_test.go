@@ -72,6 +72,14 @@ func (m *MockInventoryService) Delete(ctx context.Context, adminUserID uuid.UUID
 	return args.Error(0)
 }
 
+func (m *MockInventoryService) ListMutations(ctx context.Context, medicineID uuid.UUID, page, limit int) ([]*dto.StockMutationResponse, int, error) {
+	args := m.Called(ctx, medicineID, page, limit)
+	if args.Get(0) == nil {
+		return nil, args.Int(1), args.Error(2)
+	}
+	return args.Get(0).([]*dto.StockMutationResponse), args.Int(1), args.Error(2)
+}
+
 var _ service.InventoryService = (*MockInventoryService)(nil)
 
 func newTestHandler(svc service.InventoryService) (*InventoryHandler, chi.Router) {

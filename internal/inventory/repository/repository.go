@@ -21,4 +21,8 @@ type MedicineRepository interface {
 	List(ctx context.Context, nameFilter *string, reqPrescFilter *bool, page, limit int) ([]*model.Medicine, int, error)
 	SoftDelete(ctx context.Context, id uuid.UUID, deletedBy uuid.UUID) error
 	UpdateStock(ctx context.Context, tx pgx.Tx, id uuid.UUID, newStock int) error
+
+	// Stock mutation history
+	RecordMutation(ctx context.Context, tx pgx.Tx, mutation *model.StockMutation) error
+	ListMutations(ctx context.Context, medicineID uuid.UUID, page, limit int) ([]*model.StockMutation, int, error)
 }

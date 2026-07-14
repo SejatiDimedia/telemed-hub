@@ -25,6 +25,10 @@ export const doctorApi = {
   createAvailability: (data: { start_time: string; end_time: string }): Promise<Availability> => {
     return apiClient.post<Availability>("/doctors/me/availability", data);
   },
+  
+  createAvailabilityBulk: (data: { slots: { start_time: string; end_time: string }[] }): Promise<{ created: Availability[]; errors: string[] }> => {
+    return apiClient.post<{ created: Availability[]; errors: string[] }>("/doctors/me/availability/bulk", data);
+  },
 
   deleteAvailability: (slotId: string): Promise<void> => {
     return apiClient.delete<void>(`/doctors/me/availability/${slotId}`);

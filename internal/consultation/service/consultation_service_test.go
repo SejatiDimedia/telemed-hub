@@ -84,6 +84,11 @@ func (m *MockAppointmentService) Reschedule(ctx context.Context, id uuid.UUID, u
 	return args.Get(0).(*appointmentDto.AppointmentResponse), args.Error(1)
 }
 
+func (m *MockAppointmentService) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
+	args := m.Called(ctx, id, status)
+	return args.Error(0)
+}
+
 func (m *MockAppointmentService) SetConsultationService(consSvc appointmentService.ConsultationServiceClient) {
 	m.Called(consSvc)
 }
@@ -121,10 +126,37 @@ func TestConsultationService_Start(t *testing.T) {
 			return c.Status == "in_progress" && c.StartedAt != nil
 		})).Return(nil).Once()
 
+		mockApt.On("UpdateStatus", ctx, aptID, "in_progress").Return(nil).Once()
+
 		resp, err := svc.Start(ctx, consID, doctorUserID)
 		assert.NoError(t, err)
 		assert.Equal(t, "in_progress", resp.Status)
 		assert.NotNil(t, resp.StartedAt)
+
+		mockRepo.AssertExpectations(t)
+		mockApt.AssertExpectations(t)
+	})
+
+	t.Run("Idempotent re-start when already in_progress", func(t *testing.T) {
+		cons := &model.Consultation{
+			ID:            consID,
+			AppointmentID: aptID,
+			Status:        "in_progress",
+		}
+		mockRepo.On("GetByID", ctx, consID).Return(cons, nil).Once()
+
+		aptResp := &appointmentDto.AppointmentResponse{
+			ID:        aptID.String(),
+			DoctorID:  uuid.New().String(),
+			PatientID: uuid.New().String(),
+		}
+		mockApt.On("GetByID", ctx, aptID, doctorUserID, []string{"doctor"}).Return(aptResp, nil).Once()
+
+		resp, err := svc.Start(ctx, consID, doctorUserID)
+		assert.NoError(t, err)
+		assert.Equal(t, "in_progress", resp.Status)
+		assert.Equal(t, aptResp.DoctorID, resp.DoctorID)
+		assert.Equal(t, aptResp.PatientID, resp.PatientID)
 
 		mockRepo.AssertExpectations(t)
 		mockApt.AssertExpectations(t)
@@ -138,11 +170,17 @@ func TestConsultationService_Start(t *testing.T) {
 		}
 		mockRepo.On("GetByID", ctx, consID).Return(cons, nil).Once()
 
+		aptResp := &appointmentDto.AppointmentResponse{
+			ID: aptID.String(),
+		}
+		mockApt.On("GetByID", ctx, aptID, doctorUserID, []string{"doctor"}).Return(aptResp, nil).Once()
+
 		resp, err := svc.Start(ctx, consID, doctorUserID)
 		assert.Nil(t, resp)
 		assert.ErrorIs(t, err, ErrInvalidTransition)
 
 		mockRepo.AssertExpectations(t)
+		mockApt.AssertExpectations(t)
 	})
 }
 
@@ -172,6 +210,8 @@ func TestConsultationService_Complete(t *testing.T) {
 		mockRepo.On("Update", ctx, mock.MatchedBy(func(c *model.Consultation) bool {
 			return c.Status == "completed" && c.EndedAt != nil
 		})).Return(nil).Once()
+
+		mockApt.On("UpdateStatus", ctx, aptID, "completed").Return(nil).Once()
 
 		resp, err := svc.Complete(ctx, consID, doctorUserID)
 		assert.NoError(t, err)

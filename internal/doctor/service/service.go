@@ -21,6 +21,7 @@ type DoctorService interface {
 	ListDoctors(ctx context.Context, specialty *string, onlyVerified bool, sortBy string, order string, page int, limit int) ([]*dto.DoctorResponse, int, error)
 
 	AddAvailability(ctx context.Context, doctorUserID uuid.UUID, req dto.CreateAvailabilityRequest) (*dto.AvailabilityResponse, error)
+	AddAvailabilityBulk(ctx context.Context, doctorUserID uuid.UUID, req dto.CreateAvailabilityBulkRequest) (*dto.CreateAvailabilityBulkResponse, error)
 	RemoveAvailability(ctx context.Context, doctorUserID uuid.UUID, slotID uuid.UUID) error
 	GetAvailability(ctx context.Context, doctorID uuid.UUID, startTimeStr, endTimeStr string, isBooked *bool) ([]*dto.AvailabilityResponse, error)
 	InvalidateAvailabilityCache(ctx context.Context, doctorID uuid.UUID) error

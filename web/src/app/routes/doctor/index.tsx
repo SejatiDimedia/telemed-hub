@@ -5,9 +5,11 @@ import { usePatientProfileById } from "../../../features/patient/hooks/use-patie
 import { useMedicines } from "../../../features/pharmacy/hooks/use-pharmacy";
 import { useStartConsultation, useUpdateConsultationNotes, useCompleteConsultation } from "../../../features/consultation/hooks/use-consultations";
 import { useCreatePrescription } from "../../../features/prescription/hooks/use-prescriptions";
+import { useMedicalRecords, useCreateMedicalRecord } from "../../../features/medical-records/hooks/use-medical-records";
+import { useToastStore } from "../../../stores/toast-store";
 import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
-import { Dialog } from "../../../components/ui/Dialog";
+import { Drawer } from "../../../components/ui/Drawer";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Badge } from "../../../components/ui/Badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/Tabs";
@@ -39,6 +41,7 @@ function PatientDetailsCell({ patientId }: { patientId: string }) {
 }
 
 function DoctorDashboard() {
+  const addToast = useToastStore((state) => state.addToast);
   const { data: doctorProfile, isLoading: isDocLoading } = useDoctorProfileMe();
   const { data: appointments, isLoading: isAptsLoading } = useAppointments();
 
@@ -62,6 +65,7 @@ function DoctorDashboard() {
   const { mutateAsync: updateNotes, isPending: isSavingNotes } = useUpdateConsultationNotes();
   const { mutateAsync: completeConsultation, isPending: isCompleting } = useCompleteConsultation();
   const { mutateAsync: createPrescription } = useCreatePrescription();
+  const { mutateAsync: createMedicalRecord } = useCreateMedicalRecord();
 
   // Medicines catalog list
   const { data: medicines } = useMedicines();
@@ -96,18 +100,28 @@ function DoctorDashboard() {
   // Fetch active patient profile details
   const { data: activePatient } = usePatientProfileById(activePatientId ?? "");
 
+  // Fetch active patient medical records
+  const { data: activePatientRecords, isLoading: isRecordsLoading } = useMedicalRecords({
+    patientId: activePatientId ?? undefined,
+  });
+
   const handleStartConsultation = async (aptId: string, patientId: string) => {
     try {
-      await startConsultation(aptId);
-      setActiveConsultationId(aptId);
+      const result = await startConsultation(aptId);
+      // Use actual consultation ID from response for subsequent calls
+      setActiveConsultationId(result?.id ?? aptId);
       setActivePatientId(patientId);
       setNotes("");
       setIsPrescribing(false);
       setPrescriptionItems([]);
       setPrescriptionError("");
       setIsConsultationOpen(true);
-    } catch {
-      // Handled
+    } catch (err: any) {
+      addToast({
+        type: "error",
+        title: "Gagal Memulai Konsultasi",
+        message: err instanceof Error ? err.message : "Terjadi kesalahan koneksi server.",
+      });
     }
   };
 
@@ -181,7 +195,17 @@ function DoctorDashboard() {
         });
       }
 
-      // 3. Transition status to completed
+      // 3. Create a Diagnosis Medical Record for the patient
+      if (notes.trim() && activePatientId) {
+        await createMedicalRecord({
+          patient_id: activePatientId,
+          consultation_id: activeConsultationId,
+          record_type: "diagnosis",
+          content: notes,
+        });
+      }
+
+      // 4. Transition status to completed
       await completeConsultation(activeConsultationId);
       setIsConsultationOpen(false);
       setActiveConsultationId(null);
@@ -357,12 +381,12 @@ function DoctorDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Consultation Room Dialog */}
-      <Dialog
+      {/* Consultation Room Drawer */}
+      <Drawer
         isOpen={isConsultationOpen}
         onClose={() => setIsConsultationOpen(false)}
         title="Ruang Konsultasi Medis Virtual"
-        size="lg"
+        size="2xl"
         footer={
           <div className="flex justify-between items-center w-full select-none">
             <Button
@@ -430,6 +454,55 @@ function DoctorDashboard() {
                   <span className="text-on-surface">{activePatient?.phone_number ?? "-"}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Patient Medical History Panel (Sprint 5) */}
+            <div className="p-5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3">
+              <h5 className="font-bold text-on-surface text-sm flex items-center gap-1.5 select-none">
+                <span className="material-symbols-outlined text-primary text-[18px]">history</span>
+                Riwayat Medis Pasien
+              </h5>
+              <div className="h-px bg-outline-variant/20 w-full select-none"></div>
+
+              {isRecordsLoading ? (
+                <div className="flex flex-col gap-2 animate-pulse">
+                  <div className="h-8 bg-surface-container rounded"></div>
+                  <div className="h-8 bg-surface-container rounded"></div>
+                </div>
+              ) : activePatientRecords && activePatientRecords.length > 0 ? (
+                <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-1">
+                  {activePatientRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="p-2.5 rounded-lg bg-white border border-outline-variant/10 flex flex-col gap-1 text-xs"
+                    >
+                      <div className="flex items-center justify-between select-none">
+                        <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] uppercase tracking-wider ${
+                          record.record_type === "diagnosis"
+                            ? "bg-error/10 text-error border border-error/20"
+                            : record.record_type === "allergy"
+                            ? "bg-amber-600/10 text-amber-600 border border-amber-600/20"
+                            : record.record_type === "lab_result"
+                            ? "bg-green-600/10 text-green-600 border border-green-600/20"
+                            : "bg-primary/10 text-primary border border-primary/20"
+                        }`}>
+                          {record.record_type.replace("_", " ")}
+                        </span>
+                        <span className="text-[10px] text-on-surface-variant/80 font-semibold">
+                          {new Date(record.created_at).toLocaleDateString("id-ID")}
+                        </span>
+                      </div>
+                      <p className="text-on-surface font-medium leading-relaxed mt-1 break-words">
+                        {record.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-on-surface-variant/80 italic text-center py-4 select-none">
+                  Tidak ada riwayat medis sebelumnya.
+                </p>
+              )}
             </div>
           </div>
 
@@ -587,7 +660,7 @@ function DoctorDashboard() {
             )}
           </div>
         </div>
-      </Dialog>
+      </Drawer>
     </div>
   );
 }

@@ -28,6 +28,32 @@ func NewConsultationService(
 	}
 }
 
+func (s *ConsultationServiceImpl) getConsultation(ctx context.Context, id uuid.UUID, userID uuid.UUID, roles []string) (*model.Consultation, error) {
+	cons, err := s.repo.GetByID(ctx, id)
+	if err == nil {
+		return cons, nil
+	}
+	cons, errApt := s.repo.GetByAppointmentID(ctx, id)
+	if errApt == nil {
+		return cons, nil
+	}
+	appt, errAppt := s.appointmentSvc.GetByID(ctx, id, userID, roles)
+	if errAppt == nil {
+		aptID, errParse := uuid.Parse(appt.ID)
+		if errParse == nil {
+			cons = &model.Consultation{
+				ID:            uuid.New(),
+				AppointmentID: aptID,
+				Status:        "scheduled",
+			}
+			if errCreate := s.repo.Create(ctx, cons); errCreate == nil {
+				return cons, nil
+			}
+		}
+	}
+	return nil, err
+}
+
 func (s *ConsultationServiceImpl) CreateConsultation(ctx context.Context, appointmentID uuid.UUID) error {
 	cons := &model.Consultation{
 		ID:            uuid.New(),
@@ -44,7 +70,7 @@ func (s *ConsultationServiceImpl) CreateConsultation(ctx context.Context, appoin
 }
 
 func (s *ConsultationServiceImpl) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID, roles []string) (*dto.ConsultationResponse, error) {
-	cons, err := s.repo.GetByID(ctx, id)
+	cons, err := s.getConsultation(ctx, id, userID, roles)
 	if err != nil {
 		return nil, err
 	}
@@ -66,19 +92,27 @@ func (s *ConsultationServiceImpl) GetByID(ctx context.Context, id uuid.UUID, use
 }
 
 func (s *ConsultationServiceImpl) Start(ctx context.Context, id uuid.UUID, doctorUserID uuid.UUID) (*dto.ConsultationResponse, error) {
-	cons, err := s.repo.GetByID(ctx, id)
+	cons, err := s.getConsultation(ctx, id, doctorUserID, []string{"doctor"})
 	if err != nil {
 		return nil, err
 	}
 
-	if cons.Status != "scheduled" {
-		return nil, fmt.Errorf("%w: current status is %s, expected scheduled", ErrInvalidTransition, cons.Status)
-	}
-
 	// Verify the caller is the assigned doctor of the appointment
-	_, err = s.appointmentSvc.GetByID(ctx, cons.AppointmentID, doctorUserID, []string{"doctor"})
+	appt, err := s.appointmentSvc.GetByID(ctx, cons.AppointmentID, doctorUserID, []string{"doctor"})
 	if err != nil {
 		return nil, ErrUnauthorized
+	}
+
+	// Idempotent: if already in_progress, return existing state
+	if cons.Status == "in_progress" {
+		resp := s.toResponse(cons)
+		resp.DoctorID = appt.DoctorID
+		resp.PatientID = appt.PatientID
+		return resp, nil
+	}
+
+	if cons.Status != "scheduled" {
+		return nil, fmt.Errorf("%w: current status is %s, expected scheduled", ErrInvalidTransition, cons.Status)
 	}
 
 	now := time.Now().UTC()
@@ -90,11 +124,17 @@ func (s *ConsultationServiceImpl) Start(ctx context.Context, id uuid.UUID, docto
 		return nil, err
 	}
 
-	return s.toResponse(cons), nil
+	// Update corresponding appointment status to in_progress
+	_ = s.appointmentSvc.UpdateStatus(ctx, cons.AppointmentID, "in_progress")
+
+	resp := s.toResponse(cons)
+	resp.DoctorID = appt.DoctorID
+	resp.PatientID = appt.PatientID
+	return resp, nil
 }
 
 func (s *ConsultationServiceImpl) Complete(ctx context.Context, id uuid.UUID, doctorUserID uuid.UUID) (*dto.ConsultationResponse, error) {
-	cons, err := s.repo.GetByID(ctx, id)
+	cons, err := s.getConsultation(ctx, id, doctorUserID, []string{"doctor"})
 	if err != nil {
 		return nil, err
 	}
@@ -118,11 +158,14 @@ func (s *ConsultationServiceImpl) Complete(ctx context.Context, id uuid.UUID, do
 		return nil, err
 	}
 
+	// Update corresponding appointment status to completed
+	_ = s.appointmentSvc.UpdateStatus(ctx, cons.AppointmentID, "completed")
+
 	return s.toResponse(cons), nil
 }
 
 func (s *ConsultationServiceImpl) UpdateNotes(ctx context.Context, id uuid.UUID, doctorUserID uuid.UUID, notes string) (*dto.ConsultationResponse, error) {
-	cons, err := s.repo.GetByID(ctx, id)
+	cons, err := s.getConsultation(ctx, id, doctorUserID, []string{"doctor"})
 	if err != nil {
 		return nil, err
 	}

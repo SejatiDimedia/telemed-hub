@@ -61,6 +61,49 @@ export function useCreateAvailability() {
   });
 }
 
+export function useCreateAvailabilityBulk() {
+  const queryClient = useQueryClient();
+  const addToast = useToastStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: (data: { slots: { start_time: string; end_time: string }[] }) =>
+      doctorApi.createAvailabilityBulk(data),
+    onSuccess: (res) => {
+      void queryClient.invalidateQueries({ queryKey: doctorKeys.all });
+      
+      const successCount = res.created?.length ?? 0;
+      const failCount = res.errors?.length ?? 0;
+      
+      if (successCount > 0 && failCount === 0) {
+        addToast({
+          type: "success",
+          title: "Jadwal Ditambahkan",
+          message: `Berhasil menambahkan ${successCount} slot jadwal ketersediaan.`,
+        });
+      } else if (successCount > 0 && failCount > 0) {
+        addToast({
+          type: "warning",
+          title: "Jadwal Ditambahkan Sebagian",
+          message: `Berhasil mendaftarkan ${successCount} slot. ${failCount} slot dilewati karena bentrok/tidak valid.`,
+        });
+      } else if (failCount > 0) {
+        addToast({
+          type: "error",
+          title: "Gagal Menambahkan Jadwal",
+          message: `Semua ${failCount} slot jadwal bentrok dengan jadwal yang sudah ada.`,
+        });
+      }
+    },
+    onError: (error: any) => {
+      addToast({
+        type: "error",
+        title: "Gagal Menambahkan Jadwal",
+        message: error instanceof Error ? error.message : "Terjadi kesalahan.",
+      });
+    }
+  });
+}
+
 export function useDeleteAvailability() {
   const queryClient = useQueryClient();
   const addToast = useToastStore((state) => state.addToast);

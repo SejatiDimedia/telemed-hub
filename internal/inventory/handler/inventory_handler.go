@@ -47,6 +47,7 @@ func (h *InventoryHandler) Routes() chi.Router {
 
 		r.Get("/", h.List)
 		r.Get("/{id}", h.GetByID)
+		r.Get("/{id}/mutations", h.ListMutations)
 		r.Post("/", h.Create)
 		r.Put("/{id}", h.Update)
 		r.Delete("/{id}", h.Delete)
@@ -283,7 +284,7 @@ func httpcallResponseEnvelope(data any, page, limit, totalItems, totalPages int)
 	return httpcallResponseWrapper(data, page, limit, totalItems, totalPages)
 }
 
-func httpcallResponseWrapper(data any, page, limit, totalItems, totalPages int) httpresponse.Response {
+func httpcallResponseWrapper(data any, page, limit, totalItems, totalPages int) httpcallResponseWrapperType {
 	return httpresponse.Response{
 		Success: true,
 		Data:    data,
@@ -294,4 +295,47 @@ func httpcallResponseWrapper(data any, page, limit, totalItems, totalPages int) 
 			TotalPages: totalPages,
 		},
 	}
+}
+
+// Dummy to resolve type easily
+type httpcallResponseWrapperType = httpcallResponseWrapperTypeAlias
+type httpcallResponseWrapperTypeAlias = httpresponse.Response
+
+func (h *InventoryHandler) ListMutations(w http.ResponseWriter, r *http.Request) {
+	_, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	medicineID, err := uuid.Parse(idStr)
+	if err != nil {
+		httpcallBadRequest(w, "invalid medicine UUID format")
+		return
+	}
+
+	q := r.URL.Query()
+	page := 1
+	if pStr := q.Get("page"); pStr != "" {
+		if p, err := strconv.Atoi(pStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+	limit := 10
+	if lStr := q.Get("page_size"); lStr != "" {
+		if l, err := strconv.Atoi(lStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	mutations, totalItems, err := h.svc.ListMutations(r.Context(), medicineID, page, limit)
+	if err != nil {
+		h.logger.Error("failed to list stock mutations", "error", err)
+		httpcallInternalError(w)
+		return
+	}
+
+	totalPages := (totalItems + limit - 1) / limit
+	httpresponse.JSON(w, http.StatusOK, httpcallEnvelope(mutations, page, limit, totalItems, totalPages))
 }

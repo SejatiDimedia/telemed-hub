@@ -64,6 +64,11 @@ func (m *MockAppointmentService) Reschedule(ctx context.Context, id uuid.UUID, u
 	return args.Get(0).(*dto.AppointmentResponse), args.Error(1)
 }
 
+func (m *MockAppointmentService) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
+	args := m.Called(ctx, id, status)
+	return args.Error(0)
+}
+
 func (m *MockAppointmentService) SetConsultationService(consSvc service.ConsultationServiceClient) {
 	m.Called(consSvc)
 }

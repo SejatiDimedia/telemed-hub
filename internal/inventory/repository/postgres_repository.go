@@ -232,3 +232,84 @@ func (r *PostgresRepository) UpdateStock(ctx context.Context, tx pgx.Tx, id uuid
 	return nil
 }
 
+func (r *PostgresRepository) RecordMutation(ctx context.Context, tx pgx.Tx, mutation *model.StockMutation) error {
+	if mutation.ID == uuid.Nil {
+		mutation.ID = uuid.New()
+	}
+	if mutation.CreatedAt.IsZero() {
+		mutation.CreatedAt = time.Now().UTC()
+	}
+
+	query := `
+		INSERT INTO stock_mutations (id, medicine_id, mutation_type, quantity, stock_before, stock_after, reference_type, reference_id, notes, created_by, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	`
+	var createdBy *uuid.UUID
+	if mutation.CreatedBy != uuid.Nil {
+		createdBy = &mutation.CreatedBy
+	}
+
+	args := []any{
+		mutation.ID, mutation.MedicineID, mutation.MutationType, mutation.Quantity,
+		mutation.StockBefore, mutation.StockAfter, mutation.ReferenceType,
+		mutation.ReferenceID, mutation.Notes, createdBy, mutation.CreatedAt,
+	}
+
+	var err error
+	if tx != nil {
+		_, err = tx.Exec(ctx, query, args...)
+	} else {
+		_, err = r.db.Exec(ctx, query, args...)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to record stock mutation: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepository) ListMutations(ctx context.Context, medicineID uuid.UUID, page, limit int) ([]*model.StockMutation, int, error) {
+	// Count query
+	countQuery := `SELECT COUNT(*) FROM stock_mutations WHERE medicine_id = $1`
+	var totalItems int
+	err := r.db.QueryRow(ctx, countQuery, medicineID).Scan(&totalItems)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count stock mutations: %w", err)
+	}
+
+	if totalItems == 0 {
+		return []*model.StockMutation{}, 0, nil
+	}
+
+	offset := (page - 1) * limit
+	listQuery := `
+		SELECT id, medicine_id, mutation_type, quantity, stock_before, stock_after, reference_type, reference_id, notes, created_by, created_at
+		FROM stock_mutations
+		WHERE medicine_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.db.Query(ctx, listQuery, medicineID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query stock mutations: %w", err)
+	}
+	defer rows.Close()
+
+	var mutations []*model.StockMutation
+	for rows.Next() {
+		var m model.StockMutation
+		err := rows.Scan(
+			&m.ID, &m.MedicineID, &m.MutationType, &m.Quantity,
+			&m.StockBefore, &m.StockAfter, &m.ReferenceType, &m.ReferenceID,
+			&m.Notes, &m.CreatedBy, &m.CreatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan stock mutation: %w", err)
+		}
+		mutations = append(mutations, &m)
+	}
+
+	return mutations, totalItems, nil
+}
+
+

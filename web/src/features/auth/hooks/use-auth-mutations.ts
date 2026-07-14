@@ -38,6 +38,8 @@ export function useLoginMutation() {
             void navigate({ to: "/admin" });
           } else if (mainRole === "doctor") {
             void navigate({ to: "/doctor" });
+          } else if (mainRole === "pharmacy_staff") {
+            void navigate({ to: "/pharmacy" });
           } else {
             void navigate({ to: "/patient" });
           }

@@ -157,6 +157,35 @@ func (r *PostgresRepository) listByField(ctx context.Context, field string, id u
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan prescription: %w", err)
 		}
+
+		// Fetch items with medicine name for this prescription
+		itemRows, err := r.db.Query(ctx, `
+			SELECT pi.id, pi.prescription_id, pi.medicine_id, m.name,
+			       pi.dosage, pi.quantity, pi.instructions, pi.created_at, pi.updated_at
+			FROM prescription_items pi
+			JOIN medicines m ON m.id = pi.medicine_id
+			WHERE pi.prescription_id = $1
+			ORDER BY pi.created_at ASC`,
+			pres.ID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch prescription items in list: %w", err)
+		}
+
+		for itemRows.Next() {
+			var item model.PrescriptionItem
+			if err := itemRows.Scan(
+				&item.ID, &item.PrescriptionID, &item.MedicineID, &item.MedicineName,
+				&item.Dosage, &item.Quantity, &item.Instructions,
+				&item.CreatedAt, &item.UpdatedAt,
+			); err != nil {
+				itemRows.Close()
+				return nil, fmt.Errorf("failed to scan prescription item in list: %w", err)
+			}
+			pres.Items = append(pres.Items, item)
+		}
+		itemRows.Close()
+
 		result = append(result, &pres)
 	}
 

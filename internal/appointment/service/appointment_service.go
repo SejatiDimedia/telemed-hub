@@ -411,6 +411,10 @@ func (s *AppointmentServiceImpl) Reschedule(ctx context.Context, id uuid.UUID, u
 	return s.toResponse(apt), nil
 }
 
+func (s *AppointmentServiceImpl) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
+	return s.repo.UpdateStatusWithLock(ctx, id, status, nil)
+}
+
 func (s *AppointmentServiceImpl) toResponse(a *model.Appointment) *dto.AppointmentResponse {
 	var cancelledAtStr *string
 	if a.CancelledAt != nil {

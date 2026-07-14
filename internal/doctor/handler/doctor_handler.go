@@ -55,6 +55,7 @@ func (h *DoctorHandler) Routes() chi.Router {
 		r.Get("/me", h.GetMe)
 		r.Put("/me", h.UpdateMe)
 		r.Post("/me/availability", h.AddAvailabilitySlot)
+		r.Post("/me/availability/bulk", h.AddAvailabilitySlotBulk)
 		r.Delete("/me/availability/{slotId}", h.RemoveAvailabilitySlot)
 	})
 
@@ -394,10 +395,49 @@ func (h *DoctorHandler) GetAvailabilitySlots(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	httpresponse.JSON(w, http.StatusOK, httpresponse.Response{
+	httpcallResponse(w, http.StatusOK, httpresponse.Response{
 		Success: true,
 		Data:    slots,
 	})
+}
+
+// POST /doctors/me/availability/bulk
+func (h *DoctorHandler) AddAvailabilitySlotBulk(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpresponse.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthenticated")
+		return
+	}
+
+	var req dto.CreateAvailabilityBulkRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpcallResponse(w, http.StatusBadRequest, httpresponse.Response{
+			Success:   false,
+			Error:     "malformed request JSON",
+			ErrorCode: "INVALID_REQUEST",
+		})
+		return
+	}
+
+	resp, err := h.svc.AddAvailabilityBulk(r.Context(), userID, req)
+	if err != nil {
+		if errors.Is(err, repository.ErrDoctorNotFound) {
+			httpresponse.Error(w, http.StatusNotFound, "DOCTOR_NOT_FOUND", err.Error())
+			return
+		}
+		h.logger.Error("failed to bulk create availability slots", "error", err)
+		httpresponse.InternalError(w)
+		return
+	}
+
+	httpcallResponse(w, http.StatusCreated, httpresponse.Response{
+		Success: true,
+		Data:    resp,
+	})
+}
+
+func httpcallResponse(w http.ResponseWriter, status int, resp httpresponse.Response) {
+	httpresponse.JSON(w, status, resp)
 }
 
 // Helpers

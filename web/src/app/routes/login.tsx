@@ -16,6 +16,8 @@ export const Route = createFileRoute("/login")({
         throw redirect({ to: "/admin" });
       } else if (role === "doctor") {
         throw redirect({ to: "/doctor" });
+      } else if (role === "pharmacy_staff") {
+        throw redirect({ to: "/pharmacy" });
       } else {
         throw redirect({ to: "/patient" });
       }

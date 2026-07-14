@@ -78,10 +78,23 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
 }
 
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total_items: number;
+  total_pages: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T;
+  pagination: PaginationInfo;
+}
+
 interface RawApiResponse {
   success: boolean;
   message?: string;
   data?: any;
+  pagination?: PaginationInfo;
   error?: string;
   error_code?: string;
 }
@@ -179,6 +192,52 @@ async function request<T>(
   return json as T;
 }
 
+/**
+ * Variant of request that preserves the pagination metadata from the response
+ * envelope. Used for list endpoints that need pagination info.
+ */
+async function requestWithPagination<T>(
+  endpoint: string,
+  options: RequestOptions = {},
+): Promise<PaginatedResult<T>> {
+  const { body, headers: customHeaders, ...rest } = options;
+
+  const headers = new Headers(customHeaders);
+  headers.set("Content-Type", "application/json");
+
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  const config: RequestInit = {
+    ...rest,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  };
+
+  let res = await fetch(`${BASE_URL}${endpoint}`, config);
+
+  // Auto-retry dengan refresh token saat 401
+  if (res.status === 401 && accessToken) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      headers.set("Authorization", `Bearer ${accessToken!}`);
+      const retryConfig: RequestInit = { ...config, headers };
+      res = await fetch(`${BASE_URL}${endpoint}`, retryConfig);
+    }
+  }
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  const json = (await res.json()) as RawApiResponse;
+  return {
+    data: (json.data ?? []) as T,
+    pagination: json.pagination ?? { page: 1, limit: 20, total_items: 0, total_pages: 0 },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Public API methods
 // ---------------------------------------------------------------------------
@@ -186,6 +245,13 @@ async function request<T>(
 export const apiClient = {
   get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     return request<T>(endpoint, { ...options, method: "GET" });
+  },
+
+  /**
+   * GET with pagination — returns { data, pagination } instead of just data.
+   */
+  getWithPagination<T>(endpoint: string, options?: RequestOptions): Promise<PaginatedResult<T>> {
+    return requestWithPagination<T>(endpoint, { ...options, method: "GET" });
   },
 
   post<T>(endpoint: string, body?: unknown, options?: RequestOptions): Promise<T> {

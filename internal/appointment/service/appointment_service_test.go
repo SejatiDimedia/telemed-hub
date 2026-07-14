@@ -144,6 +144,14 @@ func (m *MockDoctorService) AddAvailability(ctx context.Context, doctorUserID uu
 	return args.Get(0).(*doctorDto.AvailabilityResponse), args.Error(1)
 }
 
+func (m *MockDoctorService) AddAvailabilityBulk(ctx context.Context, doctorUserID uuid.UUID, req doctorDto.CreateAvailabilityBulkRequest) (*doctorDto.CreateAvailabilityBulkResponse, error) {
+	args := m.Called(ctx, doctorUserID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*doctorDto.CreateAvailabilityBulkResponse), args.Error(1)
+}
+
 func (m *MockDoctorService) RemoveAvailability(ctx context.Context, doctorUserID uuid.UUID, slotID uuid.UUID) error {
 	args := m.Called(ctx, doctorUserID, slotID)
 	return args.Error(0)

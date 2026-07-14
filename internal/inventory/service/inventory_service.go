@@ -33,6 +33,19 @@ func (s *InventoryServiceImpl) Create(ctx context.Context, adminUserID uuid.UUID
 		return nil, err
 	}
 
+	// Record initial stock mutation
+	if med.StockQuantity > 0 {
+		_ = s.repo.RecordMutation(ctx, nil, &model.StockMutation{
+			MedicineID:    med.ID,
+			MutationType:  "in",
+			Quantity:      med.StockQuantity,
+			StockBefore:   0,
+			StockAfter:    med.StockQuantity,
+			ReferenceType: "initial_stock",
+			CreatedBy:     adminUserID,
+		})
+	}
+
 	return toResponse(med), nil
 }
 
@@ -45,6 +58,10 @@ func (s *InventoryServiceImpl) Update(ctx context.Context, adminUserID uuid.UUID
 		return nil, err
 	}
 
+	oldStock := med.StockQuantity
+	newStock := req.StockQuantity
+	stockDiff := newStock - oldStock
+
 	med.Name = req.Name
 	med.UnitPrice = req.UnitPrice
 	med.StockQuantity = req.StockQuantity
@@ -56,6 +73,25 @@ func (s *InventoryServiceImpl) Update(ctx context.Context, adminUserID uuid.UUID
 			return nil, ErrMedicineNotFound
 		}
 		return nil, err
+	}
+
+	// Record manual adjustment if stock changed
+	if stockDiff != 0 {
+		mutationType := "in"
+		qty := stockDiff
+		if stockDiff < 0 {
+			mutationType = "out"
+			qty = -stockDiff
+		}
+		_ = s.repo.RecordMutation(ctx, nil, &model.StockMutation{
+			MedicineID:    med.ID,
+			MutationType:  mutationType,
+			Quantity:      qty,
+			StockBefore:   oldStock,
+			StockAfter:    newStock,
+			ReferenceType: "manual_adjustment",
+			CreatedBy:     adminUserID,
+		})
 	}
 
 	return toResponse(med), nil
@@ -131,7 +167,21 @@ func (s *InventoryServiceImpl) DecrementStock(ctx context.Context, tx pgx.Tx, me
 		return ErrOutOfStock
 	}
 
-	return s.repo.UpdateStock(ctx, tx, medicineID, m.StockQuantity-quantity)
+	newStock := m.StockQuantity - quantity
+	if err := s.repo.UpdateStock(ctx, tx, medicineID, newStock); err != nil {
+		return err
+	}
+
+	// Record mutation
+	return s.repo.RecordMutation(ctx, tx, &model.StockMutation{
+		MedicineID:    medicineID,
+		MutationType:  "out",
+		Quantity:      quantity,
+		StockBefore:   m.StockQuantity,
+		StockAfter:    newStock,
+		ReferenceType: "order_fulfillment",
+		CreatedBy:     uuid.Nil,
+	})
 }
 
 func (s *InventoryServiceImpl) IncrementStock(ctx context.Context, tx pgx.Tx, medicineID uuid.UUID, quantity int) error {
@@ -143,6 +193,68 @@ func (s *InventoryServiceImpl) IncrementStock(ctx context.Context, tx pgx.Tx, me
 		return err
 	}
 
-	return s.repo.UpdateStock(ctx, tx, medicineID, m.StockQuantity+quantity)
+	newStock := m.StockQuantity + quantity
+	if err := s.repo.UpdateStock(ctx, tx, medicineID, newStock); err != nil {
+		return err
+	}
+
+	// Record mutation
+	return s.repo.RecordMutation(ctx, tx, &model.StockMutation{
+		MedicineID:    medicineID,
+		MutationType:  "in",
+		Quantity:      quantity,
+		StockBefore:   m.StockQuantity,
+		StockAfter:    newStock,
+		ReferenceType: "order_cancel_refund",
+		CreatedBy:     uuid.Nil,
+	})
 }
+
+func (s *InventoryServiceImpl) ListMutations(ctx context.Context, medicineID uuid.UUID, page, limit int) ([]*dto.StockMutationResponse, int, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	mutations, total, err := s.repo.ListMutations(ctx, medicineID, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Fetch medicine name
+	medName := "Obat"
+	if med, err := s.repo.GetByID(ctx, medicineID); err == nil {
+		medName = med.Name
+	}
+
+	respList := make([]*dto.StockMutationResponse, 0, len(mutations))
+	for _, m := range mutations {
+		var refIDStr *string
+		if m.ReferenceID != nil {
+			str := m.ReferenceID.String()
+			refIDStr = &str
+		}
+		respList = append(respList, &dto.StockMutationResponse{
+			ID:            m.ID.String(),
+			MedicineID:    m.MedicineID.String(),
+			MedicineName:  medName,
+			MutationType:  m.MutationType,
+			Quantity:      m.Quantity,
+			StockBefore:   m.StockBefore,
+			StockAfter:    m.StockAfter,
+			ReferenceType: m.ReferenceType,
+			ReferenceID:   refIDStr,
+			Notes:         m.Notes,
+			CreatedBy:     m.CreatedBy.String(),
+			CreatedAt:     m.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	return respList, total, nil
+}
+
 

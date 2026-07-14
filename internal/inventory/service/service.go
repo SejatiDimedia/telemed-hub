@@ -25,4 +25,7 @@ type InventoryService interface {
 	// Concurrency & Stock management methods for cross-module atomic transactions
 	DecrementStock(ctx context.Context, tx pgx.Tx, medicineID uuid.UUID, quantity int) error
 	IncrementStock(ctx context.Context, tx pgx.Tx, medicineID uuid.UUID, quantity int) error
+
+	// Stock mutations listing
+	ListMutations(ctx context.Context, medicineID uuid.UUID, page, limit int) ([]*dto.StockMutationResponse, int, error)
 }

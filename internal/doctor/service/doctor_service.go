@@ -206,6 +206,57 @@ func (s *DoctorServiceImpl) AddAvailability(ctx context.Context, doctorUserID uu
 	return mapper.ToAvailabilityResponse(slot), nil
 }
 
+func (s *DoctorServiceImpl) AddAvailabilityBulk(ctx context.Context, doctorUserID uuid.UUID, req dto.CreateAvailabilityBulkRequest) (*dto.CreateAvailabilityBulkResponse, error) {
+	doctor, err := s.repo.GetByUserID(ctx, doctorUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &dto.CreateAvailabilityBulkResponse{
+		Created: []*dto.AvailabilityResponse{},
+		Errors:  []string{},
+	}
+
+	for _, slotReq := range req.Slots {
+		startTime, endTime, err := validator.ValidateCreateAvailability(slotReq)
+		if err != nil {
+			res.Errors = append(res.Errors, fmt.Sprintf("Slot %s-%s validasi gagal: %v", slotReq.StartTime, slotReq.EndTime, err))
+			continue
+		}
+
+		overlapping, err := s.repo.CheckOverlappingSlot(ctx, doctor.ID, startTime, endTime)
+		if err != nil {
+			res.Errors = append(res.Errors, fmt.Sprintf("Slot %s-%s db error: %v", slotReq.StartTime, slotReq.EndTime, err))
+			continue
+		}
+		if overlapping {
+			res.Errors = append(res.Errors, fmt.Sprintf("Slot %s - %s bentrok dengan jadwal yang sudah ada", slotReq.StartTime, slotReq.EndTime))
+			continue
+		}
+
+		slot := &model.Availability{
+			DoctorID:  doctor.ID,
+			StartTime: startTime,
+			EndTime:   endTime,
+			IsBooked:  false,
+		}
+
+		err = s.repo.CreateAvailability(ctx, slot)
+		if err != nil {
+			res.Errors = append(res.Errors, fmt.Sprintf("Slot %s-%s gagal disimpan: %v", slotReq.StartTime, slotReq.EndTime, err))
+			continue
+		}
+
+		res.Created = append(res.Created, mapper.ToAvailabilityResponse(slot))
+	}
+
+	if len(res.Created) > 0 {
+		_ = s.InvalidateAvailabilityCache(ctx, doctor.ID)
+	}
+
+	return res, nil
+}
+
 func (s *DoctorServiceImpl) RemoveAvailability(ctx context.Context, doctorUserID uuid.UUID, slotID uuid.UUID) error {
 	// 1. Get Doctor profile
 	doctor, err := s.repo.GetByUserID(ctx, doctorUserID)

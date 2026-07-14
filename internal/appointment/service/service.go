@@ -28,6 +28,7 @@ type AppointmentService interface {
 	List(ctx context.Context, userID uuid.UUID, roles []string, statusFilter string) ([]*dto.AppointmentResponse, error)
 	Cancel(ctx context.Context, id uuid.UUID, userID uuid.UUID, req dto.CancelAppointmentRequest) error
 	Reschedule(ctx context.Context, id uuid.UUID, userID uuid.UUID, req dto.RescheduleAppointmentRequest) (*dto.AppointmentResponse, error)
+	UpdateStatus(ctx context.Context, id uuid.UUID, status string) error
 	SetConsultationService(consSvc ConsultationServiceClient)
 	RunAppointmentReminderJob(ctx context.Context) error
 }

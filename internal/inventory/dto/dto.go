@@ -26,3 +26,19 @@ type MedicineResponse struct {
 	CreatedAt            string  `json:"created_at"`
 	UpdatedAt            string  `json:"updated_at"`
 }
+
+// StockMutationResponse is the response payload for a stock mutation entry.
+type StockMutationResponse struct {
+	ID            string  `json:"id"`
+	MedicineID    string  `json:"medicine_id"`
+	MedicineName  string  `json:"medicine_name"`
+	MutationType  string  `json:"mutation_type"`
+	Quantity      int     `json:"quantity"`
+	StockBefore   int     `json:"stock_before"`
+	StockAfter    int     `json:"stock_after"`
+	ReferenceType string  `json:"reference_type"`
+	ReferenceID   *string `json:"reference_id,omitempty"`
+	Notes         string  `json:"notes"`
+	CreatedBy     string  `json:"created_by"`
+	CreatedAt     string  `json:"created_at"`
+}

@@ -117,6 +117,9 @@ func (m *MockDoctorService) ListDoctors(ctx context.Context, specialty *string, 
 func (m *MockDoctorService) AddAvailability(ctx context.Context, doctorUserID uuid.UUID, req doctorDTO.CreateAvailabilityRequest) (*doctorDTO.AvailabilityResponse, error) {
 	return nil, nil
 }
+func (m *MockDoctorService) AddAvailabilityBulk(ctx context.Context, doctorUserID uuid.UUID, req doctorDTO.CreateAvailabilityBulkRequest) (*doctorDTO.CreateAvailabilityBulkResponse, error) {
+	return nil, nil
+}
 func (m *MockDoctorService) RemoveAvailability(ctx context.Context, doctorUserID uuid.UUID, slotID uuid.UUID) error {
 	return nil
 }

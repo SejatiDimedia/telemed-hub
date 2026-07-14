@@ -62,6 +62,19 @@ func (m *MockMedicineRepository) UpdateStock(ctx context.Context, tx pgx.Tx, id 
 	return args.Error(0)
 }
 
+func (m *MockMedicineRepository) RecordMutation(ctx context.Context, tx pgx.Tx, mutation *model.StockMutation) error {
+	args := m.Called(ctx, tx, mutation)
+	return args.Error(0)
+}
+
+func (m *MockMedicineRepository) ListMutations(ctx context.Context, medicineID uuid.UUID, page, limit int) ([]*model.StockMutation, int, error) {
+	args := m.Called(ctx, medicineID, page, limit)
+	if args.Get(0) == nil {
+		return nil, args.Int(1), args.Error(2)
+	}
+	return args.Get(0).([]*model.StockMutation), args.Int(1), args.Error(2)
+}
+
 var _ repository.MedicineRepository = (*MockMedicineRepository)(nil)
 
 func TestInventoryService_Create(t *testing.T) {
@@ -82,6 +95,7 @@ func TestInventoryService_Create(t *testing.T) {
 		med.CreatedAt = time.Now()
 		med.UpdatedAt = time.Now()
 	}).Return(nil).Once()
+	mockRepo.On("RecordMutation", mock.Anything, mock.Anything, mock.AnythingOfType("*model.StockMutation")).Return(nil).Once()
 
 	res, err := svc.Create(context.Background(), actorID, req)
 	assert.NoError(t, err)
@@ -118,6 +132,7 @@ func TestInventoryService_Update(t *testing.T) {
 
 	mockRepo.On("GetByID", mock.Anything, medID).Return(existingMed, nil).Once()
 	mockRepo.On("Update", mock.Anything, mock.AnythingOfType("*model.Medicine")).Return(nil).Once()
+	mockRepo.On("RecordMutation", mock.Anything, mock.Anything, mock.AnythingOfType("*model.StockMutation")).Return(nil).Once()
 
 	res, err := svc.Update(context.Background(), actorID, medID, req)
 	assert.NoError(t, err)

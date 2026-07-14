@@ -55,7 +55,7 @@ flowchart TD
 
 ---
 
-### 🏃 Sprint 4: Doctor Workspace & Queue (`/doctor/*`) — [🔄 Sedang Berjalan / Active]
+### 🏃 Sprint 4: Doctor Workspace & Queue (`/doctor/*`) — [✅ Selesai / Completed]
 *   **Tujuan:** Menyediakan portal kerja terintegrasi bagi dokter untuk mengelola availability slots, melihat antrean harian, dan melangsungkan sesi konsultasi.
 *   **Template Visual:** Komponen antarmuka antrean resep dan rekam medis di [MedicalRecord.html](file:///Users/timurdianradhasejati/Programming/Code/Golang/telemed_hub/web/design-reference/MedicalRecord.html).
 *   **Penyelarasan API (Backend):**
@@ -67,7 +67,7 @@ flowchart TD
 
 ---
 
-### 🏃 Sprint 5: Medical Records & Access Auditing (`/patient/records`)
+### 🏃 Sprint 5: Medical Records & Access Auditing (`/patient/records`) — [✅ Selesai / Completed]
 *   **Tujuan:** Menampilkan riwayat rekam medis pasien yang sepenuhnya aman dengan verifikasi bahwa setiap akses tercatat di audit log backend.
 *   **Template Visual:** [MedicalRecord.html](file:///Users/timurdianradhasejati/Programming/Code/Golang/telemed_hub/web/design-reference/MedicalRecord.html).
 *   **Penyelarasan API (Backend):**
@@ -78,7 +78,7 @@ flowchart TD
 
 ---
 
-### 🏃 Sprint 6: Smart Pharmacy & Fulfillment (`/patient/orders` & `/pharmacy/*`)
+### 🏃 Sprint 6: Smart Pharmacy & Fulfillment (`/patient/orders` & `/pharmacy/*`) — [🔄 Sedang Berjalan / Active]
 *   **Tujuan:** Memungkinkan pasien menebus resep obat secara digital, serta menyediakan portal bagi Pharmacy Staff untuk melacak dan memproses pesanan.
 *   **Template Visual:** [InventoryLogistic.html](file:///Users/timurdianradhasejati/Programming/Code/Golang/telemed_hub/web/design-reference/InventoryLogistic.html).
 *   **Penyelarasan API (Backend):**

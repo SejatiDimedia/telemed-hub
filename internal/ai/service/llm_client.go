@@ -124,6 +124,8 @@ Output only the raw JSON. Do not include markdown code block formatting.`, sympt
 		// Append API key query param
 		apiURL = fmt.Sprintf("%s?key=%s", apiURL, c.cfg.LLM.APIKey)
 	}
+	
+	c.log.Info("calling LLM API", "url", apiURL)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewBuffer(reqBody))
 	if err != nil {

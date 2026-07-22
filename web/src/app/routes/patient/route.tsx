@@ -18,6 +18,7 @@ export const Route = createFileRoute("/patient")({
 
 const patientNavItems = [
   { label: "Dashboard", icon: "dashboard", to: "/patient" },
+  { label: "AI Triage", icon: "smart_toy", to: "/patient/ai-triage" },
   { label: "Appointments", icon: "event", to: "/patient/appointments" },
   { label: "Medical Records", icon: "folder_shared", to: "/patient/records" },
   { label: "Pharmacy Orders", icon: "pill", to: "/patient/orders" },

@@ -123,16 +123,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setApiTokens(accessToken, refreshToken);
     const decoded = decodeJwtPayload(accessToken);
     if (decoded) {
+      // Set state synchronously FIRST so router guards immediately see isAuthenticated = true
+      currentUserSync = decoded;
+      setUser(decoded);
+
       try {
         const response = await apiClient.get<{ full_name: string; profile_picture_url?: string }>("/auth/me");
         decoded.fullName = response.full_name;
         decoded.profilePictureUrl = response.profile_picture_url;
+        currentUserSync = { ...decoded };
+        setUser({ ...decoded });
       } catch (e) {
         // ignore
       }
     }
-    currentUserSync = decoded;
-    setUser(decoded);
   }, []);
 
   const logout = useCallback(() => {

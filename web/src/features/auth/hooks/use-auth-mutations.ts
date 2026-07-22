@@ -11,9 +11,9 @@ export function useLoginMutation() {
 
   return useMutation({
     mutationFn: authApi.login,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // 1. Save tokens & decode user
-      login(data.access_token, data.refresh_token);
+      await login(data.access_token, data.refresh_token);
 
       // 2. Decode user profile from token to determine redirect path
       const parts = data.access_token.split(".");

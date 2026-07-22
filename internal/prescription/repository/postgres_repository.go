@@ -191,3 +191,21 @@ func (r *PostgresRepository) listByField(ctx context.Context, field string, id u
 
 	return result, nil
 }
+
+// UpdateStatusTx updates the status of a prescription within an existing transaction.
+func (r *PostgresRepository) UpdateStatusTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, status string) error {
+	now := time.Now().UTC()
+	cmdTag, err := tx.Exec(ctx, `
+		UPDATE prescriptions 
+		SET status = $1, updated_at = $2 
+		WHERE id = $3 AND deleted_at IS NULL`,
+		status, now, id,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update prescription status: %w", err)
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return ErrPrescriptionNotFound
+	}
+	return nil
+}

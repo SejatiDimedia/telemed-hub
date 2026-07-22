@@ -8,10 +8,11 @@ import (
 // ToUserResponse converts a User model and their assigned roles to a UserResponse DTO.
 func ToUserResponse(user *model.User, roles []string) dto.UserResponse {
 	return dto.UserResponse{
-		ID:       user.ID.String(),
-		Email:    user.Email,
-		Roles:    roles,
-		FullName: user.FullName,
+		ID:                user.ID.String(),
+		Email:             user.Email,
+		Roles:             roles,
+		FullName:          user.FullName,
+		ProfilePictureURL: user.ProfilePictureURL,
 	}
 }
 

@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import { useEffect } from "react";
 import { ApiError } from "../../../lib/api-client";
+import { AvatarUpload } from "../../../components/shared/AvatarUpload";
 
 export const Route = createFileRoute("/doctor/settings")({
   component: DoctorSettingsPage,
@@ -89,6 +90,10 @@ function DoctorSettingsPage() {
           <span className="material-symbols-outlined text-primary">clinical_notes</span>
           Informasi Profesional & Kontak
         </h3>
+
+        <div className="mb-8">
+          <AvatarUpload currentUrl={profile?.profile_picture_url} name={profile?.full_name ?? "Doctor"} />
+        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
           {/* Read-only fields */}
@@ -173,11 +178,11 @@ function DoctorSettingsPage() {
               >
                 <option value="">Pilih Spesialisasi</option>
                 {/* Fallback hardcoded for now, waiting for backend GET /specialties */}
-                <option value="f47ac10b-58cc-4372-a567-0e02b2c3d479">Cardiology</option>
-                <option value="f47ac10b-58cc-4372-a567-0e02b2c3d480">Neurology</option>
-                <option value="f47ac10b-58cc-4372-a567-0e02b2c3d481">Pediatrics</option>
-                <option value="f47ac10b-58cc-4372-a567-0e02b2c3d482">General Practitioner</option>
-                <option value="f47ac10b-58cc-4372-a567-0e02b2c3d483">Dermatology</option>
+                <option value="fb703246-96be-4f76-826d-9f0104ea758b">Cardiologist</option>
+                <option value="c284d1be-9bf0-4ee1-bc50-360797696d4c">Neurologist</option>
+                <option value="507133dd-7dcb-4658-b1a0-6ec9129c0edd">Pediatrician</option>
+                <option value="67c75696-e1ae-4318-8822-d9e656253ddb">General Practitioner</option>
+                <option value="12b6a516-de9b-4b88-9e0f-197c567cdb53">Dermatologist</option>
               </select>
               {errors.specialty_id && (
                 <p className="text-xs text-error font-semibold mt-1">{errors.specialty_id.message}</p>

@@ -3,7 +3,7 @@ import type { DoctorProfile, Availability } from "../types";
 
 export const doctorApi = {
   list: (): Promise<DoctorProfile[]> => {
-    return apiClient.get<DoctorProfile[]>("/doctors");
+    return apiClient.get<DoctorProfile[]>(`/doctors?_t=${Date.now()}`);
   },
 
   get: (id: string): Promise<DoctorProfile> => {

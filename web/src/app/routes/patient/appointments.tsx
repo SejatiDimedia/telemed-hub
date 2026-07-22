@@ -241,6 +241,11 @@ function PatientAppointmentsPage() {
     return doc?.full_name ?? "Medical Specialist";
   };
 
+  const getDoctorProfilePictureForAppointment = (docId: string) => {
+    const doc = doctors?.find((d) => d.id === docId);
+    return doc?.profile_picture_url ?? undefined;
+  };
+
   const getDoctorSpecialtyForAppointment = (docId: string) => {
     const doc = doctors?.find((d) => d.id === docId);
     return doc?.specialty?.name ?? "Consultant";
@@ -340,7 +345,7 @@ function PatientAppointmentsPage() {
                         }`}
                       >
                         <div className="flex items-center gap-4">
-                          <Avatar name={doc.full_name} size="lg" />
+                          <Avatar src={doc.profile_picture_url ?? undefined} name={doc.full_name} size="lg" />
                           <div>
                             <div className="flex items-center gap-2">
                               <h4 className="font-bold text-on-surface text-md leading-tight">{doc.full_name}</h4>
@@ -389,7 +394,7 @@ function PatientAppointmentsPage() {
               {selectedDoctorId ? (
                 <Card variant="elevation" className="p-6 border border-outline-variant/10">
                   <div className="flex items-center gap-3 mb-6 select-none">
-                    <Avatar name={activeDoctor?.full_name ?? ""} size="md" />
+                    <Avatar src={activeDoctor?.profile_picture_url ?? undefined} name={activeDoctor?.full_name ?? ""} size="md" />
                     <div>
                       <h4 className="font-bold text-on-surface text-sm leading-tight">
                         Jadwal {activeDoctor?.full_name}
@@ -499,7 +504,7 @@ function PatientAppointmentsPage() {
                         return (
                           <tr key={apt.id} className="hover:bg-surface-container-lowest/30 transition-colors">
                             <td className="px-6 py-4 flex items-center gap-3">
-                              <Avatar name={getDoctorNameForAppointment(apt.doctor_id)} size="sm" />
+                              <Avatar src={getDoctorProfilePictureForAppointment(apt.doctor_id)} name={getDoctorNameForAppointment(apt.doctor_id)} size="sm" />
                               <div>
                                 <p className="font-bold text-on-surface text-sm leading-tight">
                                   {getDoctorNameForAppointment(apt.doctor_id)}
@@ -576,7 +581,7 @@ function PatientAppointmentsPage() {
         <div className="flex flex-col gap-6">
           {/* Appointment Details Summary */}
           <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/20 flex gap-4 select-none">
-            <Avatar name={activeDoctor?.full_name ?? ""} size="md" />
+            <Avatar src={activeDoctor?.profile_picture_url ?? undefined} name={activeDoctor?.full_name ?? ""} size="md" />
             <div className="flex-1 min-w-0">
               <h5 className="font-bold text-on-surface text-sm truncate">{activeDoctor?.full_name}</h5>
               <p className="text-xs text-on-surface-variant mt-0.5">{activeDoctor?.specialty?.name}</p>

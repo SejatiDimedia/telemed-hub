@@ -35,6 +35,7 @@ func ToResponse(doctor *model.Doctor) *dto.DoctorResponse {
 		UserID:               doctor.UserID.String(),
 		Email:                doctor.Email,
 		FullName:             doctor.FullName,
+		ProfilePictureURL:    doctor.ProfilePictureURL,
 		PhoneNumber:          doctor.PhoneNumber,
 		SpecialtyID:          specialtyIDStr,
 		Specialty:            specialtyResp,

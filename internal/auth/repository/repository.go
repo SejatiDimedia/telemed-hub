@@ -17,6 +17,9 @@ type AuthRepository interface {
 	// GetUserByID retrieves a user by their UUID.
 	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
+	// UpdateProfilePictureURL updates the user's avatar.
+	UpdateProfilePictureURL(ctx context.Context, userID uuid.UUID, url string) error
+
 	// GetUserRoles retrieves names of all roles assigned to the user.
 	GetUserRoles(ctx context.Context, userID uuid.UUID) ([]string, error)
 

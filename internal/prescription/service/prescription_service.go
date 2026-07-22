@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	consultationSvc "github.com/timurdianradhasejati/telemed_hub/internal/consultation/service"
 	doctorSvc "github.com/timurdianradhasejati/telemed_hub/internal/doctor/service"
 	patientSvc "github.com/timurdianradhasejati/telemed_hub/internal/patient/service"
@@ -225,4 +226,9 @@ func toResponseList(records []*model.Prescription) []*dto.PrescriptionResponse {
 		result = append(result, toResponse(p))
 	}
 	return result
+}
+
+// UpdateStatusTx updates the status of a prescription within an existing transaction.
+func (s *PrescriptionServiceImpl) UpdateStatusTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, status string) error {
+	return s.repo.UpdateStatusTx(ctx, tx, id, status)
 }

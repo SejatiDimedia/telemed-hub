@@ -13,6 +13,8 @@ var (
 	ErrDoctorNotFound       = errors.New("doctor not found")
 	ErrAvailabilityNotFound = errors.New("availability slot not found")
 	ErrSlotBooked           = errors.New("availability slot is already booked")
+	ErrDuplicatePhone       = errors.New("phone number already in use")
+	ErrInvalidSpecialty     = errors.New("specialty not found")
 )
 
 // DoctorRepository defines data operations for Doctor profiles.

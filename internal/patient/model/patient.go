@@ -10,9 +10,10 @@ import (
 type Patient struct {
 	ID          uuid.UUID  `json:"id"`
 	UserID      uuid.UUID  `json:"user_id"`
-	Email       string     `json:"email"`
-	FullName    string     `json:"full_name"`
-	PhoneNumber *string    `json:"phone_number"`
+	Email             string     `json:"email"`
+	FullName          string     `json:"full_name"`
+	ProfilePictureURL *string    `json:"profile_picture_url"`
+	PhoneNumber       *string    `json:"phone_number"`
 	DateOfBirth *time.Time `json:"date_of_birth"`
 	Gender      *string    `json:"gender"`
 	BloodType   *string    `json:"blood_type"`

@@ -3,6 +3,7 @@ export interface PatientProfile {
   user_id: string;
   email: string;
   full_name: string;
+  profile_picture_url?: string | null;
   phone_number: string | null;
   date_of_birth: string | null;
   gender: string | null;

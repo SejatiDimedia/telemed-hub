@@ -152,7 +152,11 @@ async function request<T>(
   const { body, headers: customHeaders, ...rest } = options;
 
   const headers = new Headers(customHeaders);
-  headers.set("Content-Type", "application/json");
+  const isFormData = body instanceof FormData;
+  
+  if (!isFormData) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
@@ -161,7 +165,7 @@ async function request<T>(
   const config: RequestInit = {
     ...rest,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,
   };
 
   let res = await fetch(`${BASE_URL}${endpoint}`, config);
@@ -203,7 +207,11 @@ async function requestWithPagination<T>(
   const { body, headers: customHeaders, ...rest } = options;
 
   const headers = new Headers(customHeaders);
-  headers.set("Content-Type", "application/json");
+  const isFormData = body instanceof FormData;
+
+  if (!isFormData) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
@@ -212,7 +220,7 @@ async function requestWithPagination<T>(
   const config: RequestInit = {
     ...rest,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,
   };
 
   let res = await fetch(`${BASE_URL}${endpoint}`, config);

@@ -34,6 +34,8 @@ import (
 	"github.com/timurdianradhasejati/telemed_hub/internal/prescription"
 	"github.com/timurdianradhasejati/telemed_hub/internal/shared"
 	"github.com/timurdianradhasejati/telemed_hub/internal/wallet"
+	"github.com/timurdianradhasejati/telemed_hub/internal/user"
+	"github.com/timurdianradhasejati/telemed_hub/internal/file"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/jobs"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/logger"
 	custommw "github.com/timurdianradhasejati/telemed_hub/pkg/middleware"
@@ -140,9 +142,11 @@ func main() {
 	auditSvc := shared.NewAuditService(dbPool)
 
 	// --- Initialize Modules ---
+	fileMod := file.NewModule(minioClient, cfg.MinIO, log)
 	notificationMod := notification.NewModule(dbPool, rdb, cfg, log)
 	walletMod := wallet.NewModule(dbPool, rdb, cfg, log)
 	authMod := auth.NewModule(dbPool, rdb, cfg, log)
+	userMod := user.NewModule(dbPool, rdb, cfg, fileMod.Service, log)
 	patientMod := patient.NewModule(dbPool, rdb, cfg, log)
 	doctorMod := doctor.NewModule(dbPool, rdb, cfg, auditSvc, log)
 	appointmentMod := appointment.NewModule(dbPool, cfg, rdb, log, patientMod.Service, doctorMod.Service, walletMod.Service, notificationMod.Service)
@@ -169,6 +173,7 @@ func main() {
 	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Mount("/auth", authMod.Handler.Routes())
+		r.Mount("/users", userMod.Handler.Routes())
 		r.Mount("/patients", patientMod.Handler.Routes())
 		r.Mount("/doctors", doctorMod.Handler.Routes())
 		r.Mount("/appointments", appointmentMod.Handler.Routes())

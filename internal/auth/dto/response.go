@@ -17,8 +17,9 @@ type AuthResponse struct {
 
 // UserResponse represents user profile/session details returned by GET /auth/me.
 type UserResponse struct {
-	ID       string   `json:"id"`
-	Email    string   `json:"email"`
-	Roles    []string `json:"roles"`
-	FullName string   `json:"full_name"`
+	ID                string   `json:"id"`
+	Email             string   `json:"email"`
+	Roles             []string `json:"roles"`
+	FullName          string   `json:"full_name"`
+	ProfilePictureURL *string  `json:"profile_picture_url,omitempty"`
 }

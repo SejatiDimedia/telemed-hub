@@ -23,14 +23,14 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 
 func (r *PostgresRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*model.Patient, error) {
 	query := `
-		SELECT p.id, p.user_id, u.email, u.full_name, u.phone_number, p.date_of_birth, p.gender, p.blood_type, p.created_at, p.updated_at, p.deleted_at
+		SELECT p.id, p.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, p.date_of_birth, p.gender, p.blood_type, p.created_at, p.updated_at, p.deleted_at
 		FROM patients p
 		JOIN users u ON p.user_id = u.id
 		WHERE p.user_id = $1 AND p.deleted_at IS NULL AND u.deleted_at IS NULL`
 
 	var p model.Patient
 	err := r.db.QueryRow(ctx, query, userID).Scan(
-		&p.ID, &p.UserID, &p.Email, &p.FullName, &p.PhoneNumber, &p.DateOfBirth, &p.Gender, &p.BloodType, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt,
+		&p.ID, &p.UserID, &p.Email, &p.FullName, &p.ProfilePictureURL, &p.PhoneNumber, &p.DateOfBirth, &p.Gender, &p.BloodType, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -44,14 +44,14 @@ func (r *PostgresRepository) GetByUserID(ctx context.Context, userID uuid.UUID) 
 
 func (r *PostgresRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Patient, error) {
 	query := `
-		SELECT p.id, p.user_id, u.email, u.full_name, u.phone_number, p.date_of_birth, p.gender, p.blood_type, p.created_at, p.updated_at, p.deleted_at
+		SELECT p.id, p.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, p.date_of_birth, p.gender, p.blood_type, p.created_at, p.updated_at, p.deleted_at
 		FROM patients p
 		JOIN users u ON p.user_id = u.id
 		WHERE p.id = $1 AND p.deleted_at IS NULL AND u.deleted_at IS NULL`
 
 	var p model.Patient
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&p.ID, &p.UserID, &p.Email, &p.FullName, &p.PhoneNumber, &p.DateOfBirth, &p.Gender, &p.BloodType, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt,
+		&p.ID, &p.UserID, &p.Email, &p.FullName, &p.ProfilePictureURL, &p.PhoneNumber, &p.DateOfBirth, &p.Gender, &p.BloodType, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

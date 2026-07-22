@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/timurdianradhasejati/telemed_hub/internal/prescription/model"
 )
 
@@ -27,4 +28,7 @@ type PrescriptionRepository interface {
 
 	// ListByDoctorID returns all prescriptions issued by a doctor.
 	ListByDoctorID(ctx context.Context, doctorID uuid.UUID) ([]*model.Prescription, error)
+
+	// UpdateStatusTx updates the status of a prescription within an existing transaction.
+	UpdateStatusTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, status string) error
 }

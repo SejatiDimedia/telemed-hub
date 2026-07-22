@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  apiClient,
   setTokens as setApiTokens,
   clearTokens as clearApiTokens,
   getAccessToken,
@@ -21,6 +22,8 @@ export interface AuthUser {
   id: string;
   email: string;
   role: UserRole;
+  fullName?: string;
+  profilePictureUrl?: string;
 }
 
 interface AuthContextValue {
@@ -29,9 +32,11 @@ interface AuthContextValue {
   /** Whether user is authenticated */
   isAuthenticated: boolean;
   /** Set tokens after login/register and decode user from JWT */
-  login: (accessToken: string, refreshToken: string) => void;
+  login: (accessToken: string, refreshToken: string) => Promise<void>;
   /** Clear tokens and user state */
   logout: () => void;
+  /** Update current user details like profilePictureUrl */
+  updateUser: (updates: Partial<AuthUser>) => void;
 }
 
 // Synchronous module-level cache to prevent React async state update race conditions in router guards
@@ -92,6 +97,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const token = getAccessToken();
             if (token) {
               const decoded = decodeJwtPayload(token);
+              // Fetch user info for profile_picture_url
+              try {
+                const response = await apiClient.get<{ full_name: string; profile_picture_url?: string }>("/auth/me");
+                decoded!.fullName = response.full_name;
+                decoded!.profilePictureUrl = response.profile_picture_url;
+              } catch (e) {
+                // ignore
+              }
               currentUserSync = decoded;
               setUser(decoded);
             }
@@ -106,9 +119,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restoreSession();
   }, []);
 
-  const login = useCallback((accessToken: string, refreshToken: string) => {
+  const login = useCallback(async (accessToken: string, refreshToken: string) => {
     setApiTokens(accessToken, refreshToken);
     const decoded = decodeJwtPayload(accessToken);
+    if (decoded) {
+      try {
+        const response = await apiClient.get<{ full_name: string; profile_picture_url?: string }>("/auth/me");
+        decoded.fullName = response.full_name;
+        decoded.profilePictureUrl = response.profile_picture_url;
+      } catch (e) {
+        // ignore
+      }
+    }
     currentUserSync = decoded;
     setUser(decoded);
   }, []);
@@ -117,6 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearApiTokens();
     currentUserSync = null;
     setUser(null);
+  }, []);
+
+  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+    if (currentUserSync) {
+      const updated = { ...currentUserSync, ...updates };
+      currentUserSync = updated;
+      setUser(updated);
+    }
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -130,8 +160,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       login,
       logout,
+      updateUser,
     }),
-    [user, login, logout],
+    [user, login, logout, updateUser],
   );
 
   if (isInitializing) {

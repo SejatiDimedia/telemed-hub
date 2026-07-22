@@ -153,7 +153,13 @@ func (s *OrderServiceImpl) Create(ctx context.Context, patientUserID uuid.UUID, 
 		return nil, fmt.Errorf("failed to persist order: %w", err)
 	}
 
-	// 8. Commit Transaction
+	// 8. Update Prescription Status to 'fulfilled'
+	err = s.prescriptionSvc.UpdateStatusTx(ctx, tx, presID, "fulfilled")
+	if err != nil {
+		return nil, fmt.Errorf("failed to update prescription status: %w", err)
+	}
+
+	// 9. Commit Transaction
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit order transaction: %w", err)
 	}

@@ -130,6 +130,14 @@ func (h *DoctorHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 			httpresponse.Error(w, http.StatusNotFound, "NOT_FOUND", "Doctor profile not found")
 			return
 		}
+		if errors.Is(err, repository.ErrDuplicatePhone) {
+			httpresponse.Error(w, http.StatusConflict, "CONFLICT", "Phone number is already in use by another user")
+			return
+		}
+		if errors.Is(err, repository.ErrInvalidSpecialty) {
+			httpresponse.Error(w, http.StatusBadRequest, "BAD_REQUEST", "Selected specialty does not exist")
+			return
+		}
 		h.logger.Error("failed to update doctor profile", "error", err)
 		httpresponse.InternalError(w)
 		return

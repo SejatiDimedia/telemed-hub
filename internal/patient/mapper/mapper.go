@@ -18,13 +18,14 @@ func ToResponse(patient *model.Patient) *dto.PatientResponse {
 	}
 
 	return &dto.PatientResponse{
-		ID:          patient.ID.String(),
-		UserID:      patient.UserID.String(),
-		Email:       patient.Email,
-		FullName:    patient.FullName,
-		PhoneNumber: patient.PhoneNumber,
-		DateOfBirth: dobStr,
-		Gender:      patient.Gender,
-		BloodType:   patient.BloodType,
+		ID:                patient.ID.String(),
+		UserID:            patient.UserID.String(),
+		Email:             patient.Email,
+		FullName:          patient.FullName,
+		ProfilePictureURL: patient.ProfilePictureURL,
+		PhoneNumber:       patient.PhoneNumber,
+		DateOfBirth:       dobStr,
+		Gender:            patient.Gender,
+		BloodType:         patient.BloodType,
 	}
 }

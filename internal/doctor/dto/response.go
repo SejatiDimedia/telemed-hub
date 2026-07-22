@@ -14,12 +14,13 @@ type DoctorResponse struct {
 	UserID               string             `json:"user_id"`
 	Email                string             `json:"email"`
 	FullName             string             `json:"full_name"`
+	ProfilePictureURL    *string            `json:"profile_picture_url,omitempty"`
 	PhoneNumber          *string            `json:"phone_number,omitempty"`
 	SpecialtyID          *string            `json:"specialty_id"`
 	Specialty            *SpecialtyResponse `json:"specialty,omitempty"`
 	LicenseNumber        *string            `json:"license_number,omitempty"`
-	IsCredentialVerified bool    `json:"is_credential_verified"`
-	ConsultationFee      int64   `json:"consultation_fee"`
+	IsCredentialVerified bool               `json:"is_credential_verified"`
+	ConsultationFee      int64              `json:"consultation_fee"`
 }
 
 // SanitizeForPublic returns a copy of DoctorResponse with sensitive credentials omitted.

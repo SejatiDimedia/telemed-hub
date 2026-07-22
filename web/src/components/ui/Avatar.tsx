@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface AvatarProps {
   src?: string;
@@ -16,6 +16,14 @@ export function Avatar({
   className = "",
 }: AvatarProps) {
   const [imageError, setImageError] = useState(false);
+  
+  console.log("Avatar render:", { name, src, imageError });
+
+  useEffect(() => {
+    setImageError(false);
+  }, [src]);
+
+  const finalSrc = src ? (src.includes("?") ? `${src}&_cb=${Date.now()}` : `${src}?_cb=${Date.now()}`) : undefined;
 
   // Generate initials
   const initials = name
@@ -49,14 +57,14 @@ export function Avatar({
         className={`flex items-center justify-center rounded-full overflow-hidden select-none font-bold font-body ${
           sizeClasses[size]
         } ${
-          src && !imageError
+          finalSrc && !imageError
             ? "bg-transparent"
             : "bg-primary-container text-on-primary-container border border-primary/20"
         }`}
       >
-        {src && !imageError ? (
+        {finalSrc && !imageError ? (
           <img
-            src={src}
+            src={finalSrc}
             alt={name}
             onError={() => setImageError(true)}
             className="w-full h-full object-cover"

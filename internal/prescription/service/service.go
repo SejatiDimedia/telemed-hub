@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/timurdianradhasejati/telemed_hub/internal/prescription/dto"
 )
 
@@ -32,4 +33,7 @@ type PrescriptionService interface {
 
 	// List returns prescriptions scoped to the caller's role.
 	List(ctx context.Context, userID uuid.UUID, roles []string) ([]*dto.PrescriptionResponse, error)
+
+	// UpdateStatusTx updates the status of a prescription within an existing transaction.
+	UpdateStatusTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, status string) error
 }

@@ -97,13 +97,13 @@ func (r *PostgresRepository) CreateUserWithRoleAndProfile(ctx context.Context, u
 
 func (r *PostgresRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	query := `
-		SELECT id, email, phone_number, password_hash, full_name, is_verified, status, created_at, updated_at, deleted_at, created_by, updated_by, deleted_by
+		SELECT id, email, phone_number, password_hash, full_name, profile_picture_url, is_verified, status, created_at, updated_at, deleted_at, created_by, updated_by, deleted_by
 		FROM users
 		WHERE email = $1 AND deleted_at IS NULL`
 
 	var user model.User
 	err := r.db.QueryRow(ctx, query, email).Scan(
-		&user.ID, &user.Email, &user.PhoneNumber, &user.PasswordHash, &user.FullName, &user.IsVerified, &user.Status,
+		&user.ID, &user.Email, &user.PhoneNumber, &user.PasswordHash, &user.FullName, &user.ProfilePictureURL, &user.IsVerified, &user.Status,
 		&user.CreatedAt, &user.UpdatedAt, &user.DeletedAt, &user.CreatedBy, &user.UpdatedBy, &user.DeletedBy,
 	)
 
@@ -119,13 +119,13 @@ func (r *PostgresRepository) GetUserByEmail(ctx context.Context, email string) (
 
 func (r *PostgresRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	query := `
-		SELECT id, email, phone_number, password_hash, full_name, is_verified, status, created_at, updated_at, deleted_at, created_by, updated_by, deleted_by
+		SELECT id, email, phone_number, password_hash, full_name, profile_picture_url, is_verified, status, created_at, updated_at, deleted_at, created_by, updated_by, deleted_by
 		FROM users
 		WHERE id = $1 AND deleted_at IS NULL`
 
 	var user model.User
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&user.ID, &user.Email, &user.PhoneNumber, &user.PasswordHash, &user.FullName, &user.IsVerified, &user.Status,
+		&user.ID, &user.Email, &user.PhoneNumber, &user.PasswordHash, &user.FullName, &user.ProfilePictureURL, &user.IsVerified, &user.Status,
 		&user.CreatedAt, &user.UpdatedAt, &user.DeletedAt, &user.CreatedBy, &user.UpdatedBy, &user.DeletedBy,
 	)
 
@@ -137,6 +137,12 @@ func (r *PostgresRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*mo
 	}
 
 	return &user, nil
+}
+
+func (r *PostgresRepository) UpdateProfilePictureURL(ctx context.Context, userID uuid.UUID, url string) error {
+	query := `UPDATE users SET profile_picture_url = $1, updated_at = $2 WHERE id = $3`
+	_, err := r.db.Exec(ctx, query, url, time.Now().UTC(), userID)
+	return err
 }
 
 func (r *PostgresRepository) GetUserRoles(ctx context.Context, userID uuid.UUID) ([]string, error) {

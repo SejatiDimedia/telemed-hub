@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import { useEffect } from "react";
 import { ApiError } from "../../../lib/api-client";
+import { AvatarUpload } from "../../../components/shared/AvatarUpload";
 
 export const Route = createFileRoute("/patient/settings")({
   component: PatientSettingsPage,
@@ -90,6 +91,10 @@ function PatientSettingsPage() {
           <span className="material-symbols-outlined text-primary">person</span>
           Informasi Demografis & Kontak
         </h3>
+
+        <div className="mb-8">
+          <AvatarUpload currentUrl={profile?.profile_picture_url} name={profile?.full_name ?? "Patient"} />
+        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
           {/* Read-only Name and Email */}

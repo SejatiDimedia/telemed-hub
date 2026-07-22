@@ -20,19 +20,20 @@ var (
 
 // User represents the central identity of a patient, doctor, pharmacy staff, or admin.
 type User struct {
-	ID           uuid.UUID
-	Email        string
-	PhoneNumber  *string
-	PasswordHash string
-	FullName     string
-	IsVerified   bool
-	Status       string // "active", "suspended", "deactivated"
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    *time.Time
-	CreatedBy    *uuid.UUID
-	UpdatedBy    *uuid.UUID
-	DeletedBy    *uuid.UUID
+	ID                uuid.UUID
+	Email             string
+	PhoneNumber       *string
+	PasswordHash      string
+	FullName          string
+	ProfilePictureURL *string
+	IsVerified        bool
+	Status            string // "active", "suspended", "deactivated"
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	DeletedAt         *time.Time
+	CreatedBy         *uuid.UUID
+	UpdatedBy         *uuid.UUID
+	DeletedBy         *uuid.UUID
 }
 
 // Role represents a system role (e.g. patient, doctor, admin, pharmacy_staff).

@@ -12,6 +12,7 @@ type Doctor struct {
 	UserID               uuid.UUID  `json:"user_id"`
 	Email                string     `json:"email"`
 	FullName             string     `json:"full_name"`
+	ProfilePictureURL    *string    `json:"profile_picture_url"`
 	PhoneNumber          *string    `json:"phone_number"`
 	SpecialtyID          *uuid.UUID `json:"specialty_id"`
 	Specialty            *Specialty `json:"specialty,omitempty"`

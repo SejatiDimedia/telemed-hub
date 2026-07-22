@@ -15,7 +15,7 @@ export function useDoctors() {
   return useQuery({
     queryKey: doctorKeys.lists(),
     queryFn: doctorApi.list,
-    staleTime: 10 * 60 * 1000, // 10 minutes cache
+    staleTime: 0, // Bypass cache temporarily for development
   });
 }
 

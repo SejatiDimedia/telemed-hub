@@ -159,12 +159,13 @@ function PatientDashboard() {
             <Card variant="elevation" className="overflow-hidden border border-outline-variant/10 group animate-in fade-in duration-500">
               <div className="grid grid-cols-1 md:grid-cols-5">
                 <div className="md:col-span-2 relative h-48 md:h-auto overflow-hidden">
-                  <img
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    alt="Clinical setting"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtiR0cQv50cZUQ0JmYJNAyNo4anjxyrxtdprJMqur-8vm95A2rnD2GSKaDzDEWHIeFdjXhsvJWlHg7i2rqLD7HO7Kk1qhPCl98U2ivLqjrQDQhTTija9xi4k8i470lKcxc_KKe02Dwo7nrHgugWjHXnT96stqe8I5oBq-_sNcgP0HXlRssH8sviAxERwSYjFEazsxkjaejw2ASbrFR_T2N84fvuZc9_Zho8FLX_V8jnUaTnip4MjlJjwnak6zzNNMaeB4q_VUT74k"
+                  <Avatar 
+                    src={nextDoctor?.profile_picture_url ?? undefined} 
+                    name={nextDoctorName} 
+                    size="lg" 
+                    className="w-full h-full [&>div]:rounded-none" 
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6 pointer-events-none">
                     <Badge variant="primary" className="uppercase tracking-widest text-[10px] py-1 select-none">
                       Next Appointment
                     </Badge>
@@ -356,7 +357,7 @@ function PatientDashboard() {
           {/* Personal Profile Preview */}
           <Card variant="elevation" className="p-card-padding text-center select-none">
             <div className="relative w-24 h-24 mx-auto mb-4">
-              <Avatar name={patientName} size="lg" status="online" className="w-full h-full border-4 border-surface-container" />
+              <Avatar src={profile?.profile_picture_url ?? undefined} name={patientName} size="lg" status="online" className="w-full h-full border-4 border-surface-container" />
             </div>
             <h5 className="font-bold text-on-surface text-lg">{patientName}</h5>
             <p className="text-sm text-on-surface-variant/80 mb-6">Patient ID: {patientCode}</p>

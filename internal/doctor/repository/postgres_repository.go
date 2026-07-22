@@ -24,7 +24,7 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 
 func (r *PostgresRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*model.Doctor, error) {
 	query := `
-		SELECT d.id, d.user_id, u.email, u.full_name, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
+		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
 		FROM doctors d
 		JOIN users u ON d.user_id = u.id
 		LEFT JOIN specialties s ON d.specialty_id = s.id
@@ -35,7 +35,7 @@ func (r *PostgresRepository) GetByUserID(ctx context.Context, userID uuid.UUID) 
 	var sName, sIcon, sDesc *string
 
 	err := r.db.QueryRow(ctx, query, userID).Scan(
-		&d.ID, &d.UserID, &d.Email, &d.FullName, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
+		&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -58,7 +58,7 @@ func (r *PostgresRepository) GetByUserID(ctx context.Context, userID uuid.UUID) 
 
 func (r *PostgresRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Doctor, error) {
 	query := `
-		SELECT d.id, d.user_id, u.email, u.full_name, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
+		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
 		FROM doctors d
 		JOIN users u ON d.user_id = u.id
 		LEFT JOIN specialties s ON d.specialty_id = s.id
@@ -69,7 +69,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.
 	var sName, sIcon, sDesc *string
 
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&d.ID, &d.UserID, &d.Email, &d.FullName, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
+		&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -109,6 +109,9 @@ func (r *PostgresRepository) Update(ctx context.Context, d *model.Doctor) error 
 
 	res, err := tx.Exec(ctx, queryUser, d.PhoneNumber, now, d.UserID)
 	if err != nil {
+		if strings.Contains(err.Error(), "uq_users_phone_number_active") {
+			return ErrDuplicatePhone
+		}
 		return fmt.Errorf("failed to update user phone: %w", err)
 	}
 	if res.RowsAffected() == 0 {
@@ -123,6 +126,9 @@ func (r *PostgresRepository) Update(ctx context.Context, d *model.Doctor) error 
 
 	res, err = tx.Exec(ctx, queryDoctor, d.SpecialtyID, d.LicenseNumber, d.ConsultationFee, now, d.ID)
 	if err != nil {
+		if strings.Contains(err.Error(), "fk_doctors_specialty") {
+			return ErrInvalidSpecialty
+		}
 		return fmt.Errorf("failed to update doctor fields: %w", err)
 	}
 	if res.RowsAffected() == 0 {
@@ -204,7 +210,7 @@ func (r *PostgresRepository) List(ctx context.Context, specialty *string, onlyVe
 
 	// 2. Fetch records
 	selectQuery := fmt.Sprintf(`
-		SELECT d.id, d.user_id, u.email, u.full_name, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
+		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
 		FROM doctors d
 		JOIN users u ON d.user_id = u.id
 		LEFT JOIN specialties s ON d.specialty_id = s.id
@@ -226,7 +232,7 @@ func (r *PostgresRepository) List(ctx context.Context, specialty *string, onlyVe
 		var sID *uuid.UUID
 		var sName, sIcon, sDesc *string
 		err = rows.Scan(
-			&d.ID, &d.UserID, &d.Email, &d.FullName, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
+			&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan doctor row: %w", err)

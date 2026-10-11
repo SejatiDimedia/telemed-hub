@@ -59,6 +59,12 @@ function PatientAppointmentsPage() {
   );
   const { data: appointments, isLoading: isAppointmentsLoading } = useAppointments();
 
+  const activeAppointment = useMemo(() => {
+    return appointments?.find(
+      (a) => a.status === "in_progress" || a.status === "scheduled" || a.status === "confirmed"
+    );
+  }, [appointments]);
+
   // Mutations
   const { mutateAsync: updateProfile, isPending: isUpdatingProfile } = useUpdatePatientProfile();
   const { mutateAsync: bookAppointment, isPending: isBookingPending } = useBookAppointment();
@@ -296,10 +302,56 @@ function PatientAppointmentsPage() {
         </div>
       </section>
 
-      <Tabs defaultValue="book" className="w-full">
+      {/* Active Appointment Callout Banner */}
+      {activeAppointment && (
+        <Card variant="elevation" className="p-5 border-2 border-primary/40 bg-primary/5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs select-none">
+          <div className="flex items-center gap-4">
+            <Avatar
+              src={getDoctorProfilePictureForAppointment(activeAppointment.doctor_id)}
+              name={getDoctorNameForAppointment(activeAppointment.doctor_id)}
+              size="md"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-on-surface text-sm">
+                  Konsultasi dengan {getDoctorNameForAppointment(activeAppointment.doctor_id)}
+                </h4>
+                {getAppointmentStatusBadge(activeAppointment.status)}
+              </div>
+              <p className="text-xs text-on-surface-variant font-medium mt-0.5">
+                {new Date(activeAppointment.scheduled_at).toLocaleString("id-ID", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })} WIB
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            onClick={() =>
+              void navigate({
+                to: "/patient/consultation/$consultationId",
+                params: { consultationId: activeAppointment.id },
+              })
+            }
+            className="py-2.5 px-6 rounded-full text-xs font-bold flex items-center gap-2 shadow-xs shrink-0"
+          >
+            <span className="material-symbols-outlined text-[18px]">videocam</span>
+            Masuk Ruang Konsultasi
+          </Button>
+        </Card>
+      )}
+
+      <Tabs defaultValue={activeAppointment ? "history" : "book"} className="w-full">
         <TabsList className="select-none">
           <TabsTrigger value="book">Jadwalkan Konsultasi Baru</TabsTrigger>
-          <TabsTrigger value="history">Janji Temu Saya</TabsTrigger>
+          <TabsTrigger value="history">
+            Janji Temu Saya {appointments && appointments.length > 0 ? `(${appointments.length})` : ""}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="book" className="mt-4">

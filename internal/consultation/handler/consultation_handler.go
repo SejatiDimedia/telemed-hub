@@ -305,6 +305,14 @@ func (h *ConsultationHandler) SendMessage(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Broadcast to WebSocket hub so all connected peers receive real-time chat
+	if h.hub != nil {
+		canonicalID, parseErr := uuid.Parse(msg.ConsultationID)
+		if parseErr == nil {
+			h.hub.BroadcastChat(canonicalID, msg)
+		}
+	}
+
 	httpresponse.JSON(w, http.StatusCreated, httpresponse.Response{
 		Success: true,
 		Data:    msg,
@@ -347,7 +355,13 @@ func (h *ConsultationHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
 		userRole = "doctor"
 	}
 
-	h.hub.ServeWS(w, r, id, userID, userName, userRole)
+	// Always use canonical consultation ID so both doctor and patient enter the exact same room
+	canonicalID, parseErr := uuid.Parse(room.ConsultationID)
+	if parseErr != nil {
+		canonicalID = id
+	}
+
+	h.hub.ServeWS(w, r, canonicalID, userID, userName, userRole)
 }
 
 func httpcallUnauthorized(w http.ResponseWriter) {

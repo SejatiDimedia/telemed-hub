@@ -4,11 +4,13 @@ import type { ConsultationMessage, WSSignalingMessage } from "../types";
 
 export interface UseConsultationWebRTCOptions {
   consultationId: string;
+  isDoctor?: boolean;
   onNewMessage?: (msg: ConsultationMessage) => void;
 }
 
 export function useConsultationWebRTC({
   consultationId,
+  isDoctor = false,
   onNewMessage,
 }: UseConsultationWebRTCOptions) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -22,9 +24,14 @@ export function useConsultationWebRTC({
 
   const wsRef = useRef<WebSocket | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const candidateQueueRef = useRef<RTCIceCandidateInit[]>([]);
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
   const onNewMessageRef = useRef(onNewMessage);
   onNewMessageRef.current = onNewMessage;
+
+  const isDoctorRef = useRef(isDoctor);
+  isDoctorRef.current = isDoctor;
 
   const getWsUrl = useCallback(() => {
     const token = getAccessToken();
@@ -47,62 +54,83 @@ export function useConsultationWebRTC({
     }
   }, []);
 
-  // Initialize or get RTCPeerConnection
-  const getOrCreatePeerConnection = useCallback(
-    (stream: MediaStream | null) => {
-      if (pcRef.current) {
-        return pcRef.current;
+  // Flush queued ICE candidates after remote description is set
+  const flushCandidateQueue = useCallback(async (pc: RTCPeerConnection) => {
+    const queue = candidateQueueRef.current;
+    candidateQueueRef.current = [];
+    for (const candidate of queue) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.warn("Error adding queued ICE candidate:", err);
       }
+    }
+  }, []);
 
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" },
-        ],
-      });
+  // Create or return active RTCPeerConnection
+  const getOrCreatePeerConnection = useCallback(() => {
+    if (pcRef.current && pcRef.current.signalingState !== "closed") {
+      return pcRef.current;
+    }
 
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          sendSignaling("webrtc_ice_candidate", event.candidate);
-        }
-      };
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+      ],
+    });
 
-      pc.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0]);
-          setIsPeerConnected(true);
-        }
-      };
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        sendSignaling("webrtc_ice_candidate", event.candidate);
+      }
+    };
 
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "connected") {
-          setIsPeerConnected(true);
-        } else if (
-          pc.connectionState === "disconnected" ||
-          pc.connectionState === "failed" ||
-          pc.connectionState === "closed"
-        ) {
-          setIsPeerConnected(false);
-        }
-      };
-
-      if (stream) {
-        stream.getTracks().forEach((track) => {
-          pc.addTrack(track, stream);
+    pc.ontrack = (event) => {
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0]);
+        setIsPeerConnected(true);
+      } else if (event.track) {
+        setRemoteStream((prev) => {
+          if (prev) {
+            prev.addTrack(event.track);
+            return prev;
+          }
+          return new MediaStream([event.track]);
         });
+        setIsPeerConnected(true);
       }
+    };
 
-      pcRef.current = pc;
-      return pc;
-    },
-    [sendSignaling]
-  );
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === "connected") {
+        setIsPeerConnected(true);
+      } else if (
+        pc.connectionState === "disconnected" ||
+        pc.connectionState === "failed" ||
+        pc.connectionState === "closed"
+      ) {
+        setIsPeerConnected(false);
+      }
+    };
 
-  // Initialize local media stream
+    // Add local tracks if stream is already acquired
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current!);
+      });
+    }
+
+    pcRef.current = pc;
+    return pc;
+  }, [sendSignaling]);
+
+  // Request user camera and microphone
   useEffect(() => {
-    let active = true;
+    let isCancelled = false;
 
-    async function setupLocalMedia() {
+    async function initMedia() {
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           setMediaError("Perangkat Anda tidak mendukung akses media video/audio.");
@@ -114,134 +142,194 @@ export function useConsultationWebRTC({
           audio: true,
         });
 
-        if (!active) {
-          stream.getTracks().forEach((track) => track.stop());
+        if (isCancelled) {
+          stream.getTracks().forEach((t) => t.stop());
           return;
         }
 
+        localStreamRef.current = stream;
         setLocalStream(stream);
         setMediaError(null);
+
+        // If peer connection was already created, add tracks now
+        if (pcRef.current && pcRef.current.signalingState !== "closed") {
+          const currentSenders = pcRef.current.getSenders();
+          let added = false;
+          stream.getTracks().forEach((track) => {
+            const hasSender = currentSenders.some((s) => s.track?.kind === track.kind);
+            if (!hasSender) {
+              pcRef.current?.addTrack(track, stream);
+              added = true;
+            }
+          });
+          if (added && isDoctorRef.current && pcRef.current.signalingState === "stable") {
+            try {
+              const offer = await pcRef.current.createOffer();
+              await pcRef.current.setLocalDescription(offer);
+              sendSignaling("webrtc_offer", offer);
+            } catch (e) {
+              console.warn("Failed to create renegotiation offer:", e);
+            }
+          }
+        }
       } catch (err: any) {
         console.warn("Could not access camera/mic:", err);
-        setMediaError(
-          "Kamera/Mikrofon tidak dapat diakses atau izin ditolak. Mode chat tetap aktif."
-        );
+        setMediaError("Izin kamera/mikrofon belum aktif. Mode chat tetap berjalan normal.");
       }
     }
 
-    void setupLocalMedia();
+    void initMedia();
 
     return () => {
-      active = false;
+      isCancelled = true;
     };
-  }, []);
+  }, [sendSignaling]);
 
-  // Connect WebSocket & Wire Signaling
+  // Connect WebSocket & Manage Signaling (only on consultationId change)
   useEffect(() => {
     if (!consultationId) return;
 
+    let isDisposed = false;
     const url = getWsUrl();
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      setIsConnectedWS(true);
+      if (!isDisposed) {
+        setIsConnectedWS(true);
+      }
     };
 
     ws.onclose = () => {
-      setIsConnectedWS(false);
-      setIsPeerConnected(false);
+      if (!isDisposed) {
+        setIsConnectedWS(false);
+        setIsPeerConnected(false);
+      }
     };
 
     ws.onerror = (err) => {
       console.warn("WebSocket error:", err);
-      setIsConnectedWS(false);
     };
 
     ws.onmessage = async (event) => {
-      try {
-        const data: WSSignalingMessage = JSON.parse(event.data);
+      if (isDisposed) return;
 
-        switch (data.type) {
-          case "peer_joined": {
-            // Another peer joined, create an offer as the caller
-            const pc = getOrCreatePeerConnection(localStream);
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            sendSignaling("webrtc_offer", offer);
-            break;
-          }
+      const raw = typeof event.data === "string" ? event.data : "";
+      const lines = raw.split("\n").filter((l) => l.trim().length > 0);
 
-          case "webrtc_offer": {
-            // Received an offer, set remote and answer
-            const pc = getOrCreatePeerConnection(localStream);
-            await pc.setRemoteDescription(new RTCSessionDescription(data.payload));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            sendSignaling("webrtc_answer", answer);
-            break;
-          }
+      for (const line of lines) {
+        try {
+          const data: WSSignalingMessage = JSON.parse(line);
 
-          case "webrtc_answer": {
-            if (pcRef.current) {
-              await pcRef.current.setRemoteDescription(
-                new RTCSessionDescription(data.payload)
-              );
-            }
-            break;
-          }
-
-          case "webrtc_ice_candidate": {
-            if (pcRef.current && data.payload) {
-              try {
-                await pcRef.current.addIceCandidate(
-                  new RTCIceCandidate(data.payload)
-                );
-              } catch (e) {
-                console.warn("Error adding ICE candidate:", e);
+          switch (data.type) {
+            case "peer_joined": {
+              // A peer joined or is already here.
+              // Doctor initiates the WebRTC offer (Caller role)
+              const pc = getOrCreatePeerConnection();
+              if (localStreamRef.current) {
+                const currentSenders = pc.getSenders();
+                localStreamRef.current.getTracks().forEach((track) => {
+                  const hasSender = currentSenders.some((s) => s.track?.kind === track.kind);
+                  if (!hasSender) {
+                    pc.addTrack(track, localStreamRef.current!);
+                  }
+                });
               }
+              if (isDoctorRef.current) {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                sendSignaling("webrtc_offer", offer);
+              }
+              break;
             }
-            break;
-          }
 
-          case "peer_left": {
-            setIsPeerConnected(false);
-            setRemoteStream(null);
-            if (pcRef.current) {
-              pcRef.current.close();
-              pcRef.current = null;
+            case "webrtc_offer": {
+              // Patient receives offer, creates answer
+              const pc = getOrCreatePeerConnection();
+              if (localStreamRef.current) {
+                const currentSenders = pc.getSenders();
+                localStreamRef.current.getTracks().forEach((track) => {
+                  const hasSender = currentSenders.some((s) => s.track?.kind === track.kind);
+                  if (!hasSender) {
+                    pc.addTrack(track, localStreamRef.current!);
+                  }
+                });
+              }
+              await pc.setRemoteDescription(new RTCSessionDescription(data.payload));
+              await flushCandidateQueue(pc);
+
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              sendSignaling("webrtc_answer", answer);
+              break;
             }
-            break;
-          }
 
-          case "chat_message": {
-            if (data.payload && onNewMessageRef.current) {
-              onNewMessageRef.current(data.payload as ConsultationMessage);
+            case "webrtc_answer": {
+              // Doctor receives answer
+              const pc = getOrCreatePeerConnection();
+              if (pc.signalingState === "have-local-offer") {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.payload));
+                await flushCandidateQueue(pc);
+              }
+              break;
             }
-            break;
-          }
 
-          default:
-            break;
+            case "webrtc_ice_candidate": {
+              const pc = getOrCreatePeerConnection();
+              if (data.payload) {
+                if (pc.remoteDescription && pc.remoteDescription.type) {
+                  try {
+                    await pc.addIceCandidate(new RTCIceCandidate(data.payload));
+                  } catch (e) {
+                    console.warn("Error adding ICE candidate:", e);
+                  }
+                } else {
+                  candidateQueueRef.current.push(data.payload);
+                }
+              }
+              break;
+            }
+
+            case "peer_left": {
+              setIsPeerConnected(false);
+              setRemoteStream(null);
+              if (pcRef.current) {
+                pcRef.current.close();
+                pcRef.current = null;
+              }
+              break;
+            }
+
+            case "chat_message": {
+              if (data.payload && onNewMessageRef.current) {
+                onNewMessageRef.current(data.payload as ConsultationMessage);
+              }
+              break;
+            }
+
+            default:
+              break;
+          }
+        } catch (e) {
+          console.error("Error processing ws signaling message:", e);
         }
-      } catch (e) {
-        console.error("Error processing ws signaling message:", e);
       }
     };
 
     return () => {
+      isDisposed = true;
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();
       }
       wsRef.current = null;
     };
-  }, [consultationId, getWsUrl, getOrCreatePeerConnection, localStream, sendSignaling]);
+  }, [consultationId, getWsUrl, getOrCreatePeerConnection, sendSignaling, flushCandidateQueue]);
 
   // Clean up streams & peer connection on unmount
   useEffect(() => {
     return () => {
-      if (localStream) {
-        localStream.getTracks().forEach((track) => track.stop());
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
       }
       if (screenTrackRef.current) {
         screenTrackRef.current.stop();
@@ -251,42 +339,50 @@ export function useConsultationWebRTC({
         pcRef.current = null;
       }
     };
-  }, [localStream]);
+  }, []);
+
+  // Send In-Room Chat directly via WebSocket
+  const sendChatMessage = useCallback(
+    (message: string) => {
+      if (!message.trim()) return;
+      sendSignaling("chat_message", { message: message.trim() });
+    },
+    [sendSignaling]
+  );
 
   // Toggle Microphone
   const toggleMic = useCallback(() => {
-    if (localStream) {
-      const audioTracks = localStream.getAudioTracks();
+    if (localStreamRef.current) {
+      const audioTracks = localStreamRef.current.getAudioTracks();
       const nextState = !isMicOn;
       audioTracks.forEach((track) => {
         track.enabled = nextState;
       });
       setIsMicOn(nextState);
     }
-  }, [localStream, isMicOn]);
+  }, [isMicOn]);
 
   // Toggle Camera
   const toggleCamera = useCallback(() => {
-    if (localStream) {
-      const videoTracks = localStream.getVideoTracks();
+    if (localStreamRef.current) {
+      const videoTracks = localStreamRef.current.getVideoTracks();
       const nextState = !isCameraOn;
       videoTracks.forEach((track) => {
         track.enabled = nextState;
       });
       setIsCameraOn(nextState);
     }
-  }, [localStream, isCameraOn]);
+  }, [isCameraOn]);
 
   // Toggle Screen Sharing
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
-      // Revert back to camera track
       if (screenTrackRef.current) {
         screenTrackRef.current.stop();
         screenTrackRef.current = null;
       }
-      if (pcRef.current && localStream) {
-        const videoTrack = localStream.getVideoTracks()[0];
+      if (pcRef.current && localStreamRef.current) {
+        const videoTrack = localStreamRef.current.getVideoTracks()[0];
         const sender = pcRef.current
           .getSenders()
           .find((s) => s.track && s.track.kind === "video");
@@ -322,7 +418,7 @@ export function useConsultationWebRTC({
         console.warn("Screen share cancelled or failed:", err);
       }
     }
-  }, [isScreenSharing, localStream]);
+  }, [isScreenSharing]);
 
   return {
     localStream,
@@ -336,5 +432,6 @@ export function useConsultationWebRTC({
     toggleMic,
     toggleCamera,
     toggleScreenShare,
+    sendChatMessage,
   };
 }

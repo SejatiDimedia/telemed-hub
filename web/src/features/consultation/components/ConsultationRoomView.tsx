@@ -31,9 +31,12 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
   // Fetch consultation room data
   const { data: room, isLoading, isError, error } = useConsultationRoom(consultationId);
 
+  // Always use canonical consultation ID from room data once loaded
+  const canonicalConsultationId = room?.consultation_id ?? consultationId;
+
   // Send message mutation
   const { mutateAsync: sendMessage, isPending: isSendingMessage } =
-    useSendConsultationMessage(consultationId);
+    useSendConsultationMessage(canonicalConsultationId);
 
   // Complete consultation mutation
   const { mutateAsync: completeConsultation, isPending: isCompleting } =
@@ -49,7 +52,7 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
     });
   }, []);
 
-  // WebRTC & WebSocket Hook
+  // WebRTC & WebSocket Hook (connected with canonical ID)
   const {
     localStream,
     remoteStream,
@@ -62,7 +65,8 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
     toggleCamera,
     toggleScreenShare,
   } = useConsultationWebRTC({
-    consultationId,
+    consultationId: canonicalConsultationId,
+    isDoctor,
     onNewMessage: handleIncomingWSMessage,
   });
 
@@ -82,10 +86,14 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
 
   const handleSendChatMessage = async (text: string) => {
     try {
+      // Persist via HTTP REST API (backend will broadcast to all connected WebSocket clients)
       const res = await sendMessage({ message: text });
-      setLiveMessages((prev) => [...prev, res]);
+      setLiveMessages((prev) => {
+        if (prev.some((m) => m.id === res.id)) return prev;
+        return [...prev, res];
+      });
     } catch {
-      // Handled by toast
+      // Handled
     }
   };
 

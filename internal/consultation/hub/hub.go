@@ -88,9 +88,16 @@ func (h *Hub) register(client *Client) {
 		h.rooms[client.consultationID] = make(map[*Client]bool)
 	}
 	h.rooms[client.consultationID][client] = true
+
+	var existingPeers []*Client
+	for other := range h.rooms[client.consultationID] {
+		if other != client {
+			existingPeers = append(existingPeers, other)
+		}
+	}
 	h.mu.Unlock()
 
-	// Notify other peers in room that a user joined
+	// 1. Notify other peers in room that a new user joined
 	h.broadcastToRoom(client.consultationID, client, &WSMessage{
 		Type:           "peer_joined",
 		ConsultationID: client.consultationID.String(),
@@ -99,6 +106,42 @@ func (h *Hub) register(client *Client) {
 		SenderRole:     client.userRole,
 		Timestamp:      time.Now().UTC().Format(time.RFC3339),
 	})
+
+	// 2. Notify the newly joined client about peers who are ALREADY in the room
+	for _, peer := range existingPeers {
+		msgBytes, err := json.Marshal(&WSMessage{
+			Type:           "peer_joined",
+			ConsultationID: client.consultationID.String(),
+			SenderID:       peer.userID.String(),
+			SenderName:     peer.userName,
+			SenderRole:     peer.userRole,
+			Timestamp:      time.Now().UTC().Format(time.RFC3339),
+		})
+		if err == nil {
+			select {
+			case client.send <- msgBytes:
+			default:
+			}
+		}
+	}
+}
+
+// BroadcastChat broadcasts a persistent chat message to all connected clients in the room.
+func (h *Hub) BroadcastChat(consultationID uuid.UUID, msg *dto.MessageResponse) {
+	payloadBytes, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+	wsMsg := &WSMessage{
+		Type:           "chat_message",
+		ConsultationID: consultationID.String(),
+		SenderID:       msg.SenderID,
+		SenderName:     msg.SenderName,
+		SenderRole:     msg.SenderRole,
+		Payload:        payloadBytes,
+		Timestamp:      msg.CreatedAt,
+	}
+	h.broadcastToRoom(consultationID, nil, wsMsg)
 }
 
 func (h *Hub) unregister(client *Client) {
@@ -226,20 +269,7 @@ func (c *Client) writePump() {
 				return
 			}
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			_, _ = w.Write(message)
-
-			// Add queued chat messages to current websocket frame
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				_, _ = w.Write([]byte{'\n'})
-				_, _ = w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 		case <-ticker.C:

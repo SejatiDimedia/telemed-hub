@@ -29,10 +29,16 @@ function PatientDashboard() {
   const patientCode = profile?.id ? `#TMH-${profile.id.slice(0, 6).toUpperCase()}` : "#TMH-PATIENT";
   const walletBalance = wallet?.balance ?? 0;
 
-  // Filter scheduled, pending, or confirmed appointments
+  // Filter in_progress, scheduled, pending, or confirmed appointments
   const activeAppointments = appointments?.filter(
-    (apt) => apt.status === "scheduled" || apt.status === "pending" || apt.status === "confirmed"
+    (apt) => apt.status === "in_progress" || apt.status === "scheduled" || apt.status === "pending" || apt.status === "confirmed"
   ) ?? [];
+
+  // Active in-progress consultation
+  const inProgressAppointment = appointments?.find((apt) => apt.status === "in_progress");
+  const inProgressDoctor = inProgressAppointment && doctors
+    ? doctors.find((d) => d.id === inProgressAppointment.doctor_id)
+    : null;
 
   // Sort by date ascending to get next upcoming
   const nextAppointment = [...activeAppointments].sort(
@@ -95,6 +101,41 @@ function PatientDashboard() {
           </Button>
         </div>
       </section>
+
+      {/* Live In-Progress Consultation Banner */}
+      {inProgressAppointment && (
+        <div className="p-4 sm:p-5 bg-emerald-500/10 border-2 border-emerald-500/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-pulse">
+          <div className="flex items-center gap-3.5">
+            <span className="relative flex h-4 w-4 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+            </span>
+            <div>
+              <h4 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                Sesi Konsultasi Medis Sedang Berlangsung!
+                <Badge variant="success" className="text-[10px] py-0.5">LIVE</Badge>
+              </h4>
+              <p className="text-xs text-emerald-800 font-medium mt-0.5">
+                {inProgressDoctor ? inProgressDoctor.full_name : "Dokter Anda"} sudah menunggu di Ruang Konsultasi Interaktif.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() =>
+              void navigate({
+                to: "/patient/consultation/$consultationId",
+                params: { consultationId: inProgressAppointment.id },
+              })
+            }
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-sm shrink-0"
+          >
+            <span className="material-symbols-outlined text-[18px]">videocam</span>
+            Masuk Ruang Konsultasi
+          </Button>
+        </div>
+      )}
 
       {/* Real Patient Status Overview (4 Truthful Metrics) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -223,13 +264,30 @@ function PatientDashboard() {
                       {formatCurrency(Number(nextDoctor?.consultation_fee ?? 0))}
                     </span>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => navigate({ to: "/patient/appointments" })}
-                    className="rounded-xl px-4 font-semibold text-xs"
-                  >
-                    Detail Janji Temu
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() =>
+                        void navigate({
+                          to: "/patient/consultation/$consultationId",
+                          params: { consultationId: nextAppointment.id },
+                        })
+                      }
+                      className="rounded-xl px-4 font-bold text-xs flex items-center gap-1.5 shadow-xs"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">videocam</span>
+                      Masuk Ruangan
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate({ to: "/patient/appointments" })}
+                      className="rounded-xl px-3 font-semibold text-xs"
+                    >
+                      Detail
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>

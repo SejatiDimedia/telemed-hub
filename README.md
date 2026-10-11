@@ -123,6 +123,7 @@ make migrate-down  # Roll back last migration
 | `docs/07-api-design.md` | API contracts & error codes |
 | `docs/08-development-roadmap.md` | Sprint plan & implementation order |
 | `docs/12-engineering-summary.md` | Quick-start engineering reference |
+| `CATATAN_RUN_DAN_AKUN.md` | Panduan run aplikasi & daftar akun/password |
 
 ## License
 

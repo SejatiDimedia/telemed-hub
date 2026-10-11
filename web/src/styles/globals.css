@@ -69,10 +69,10 @@
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
 
-  /* Font Families */
-  --font-body: "Be Vietnam Pro", sans-serif;
-  --font-headline: "Playfair Display", serif;
-  --font-display: "Playfair Display", serif;
+  /* Font Families - Healthcare & Clinical Grade */
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-headline: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Custom Font Sizes (from Stitch spec) */
   --text-body-sm: 14px;
@@ -133,9 +133,16 @@ body {
   color: var(--color-on-surface);
   font-family: var(--font-body);
   font-size: var(--text-body-md);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-headline);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+table, [data-tabular], .font-mono {
+  font-feature-settings: "tnum" 1, "cv05" 1;
 }

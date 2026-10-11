@@ -34,6 +34,13 @@ function LoginPage() {
 
   const loginMutation = useLoginMutation();
 
+  const handleQuickFill = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword("Rahasia123!");
+    setValidationErrors({});
+    setApiError(null);
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setValidationErrors({});
@@ -75,87 +82,132 @@ function LoginPage() {
   };
 
   return (
-    <div className="bg-background text-on-surface font-body min-h-screen flex flex-col justify-between overflow-x-hidden">
-      <main className="flex-1 flex flex-col md:flex-row relative">
-        {/* Visual Column (Hidden on mobile) */}
-        <div className="hidden md:flex md:w-1/2 lg:w-3/5 bg-surface-container overflow-hidden relative items-center justify-center">
-          <div
-            className="absolute inset-0 z-0 opacity-80"
-            style={{
-              backgroundImage:
-                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuD3pnn0VR_TDVjTR4ETh3W_VP41qmc-3SCeCU1fVBeofkNXPHTuzAs8Yl3q3NESUCAuUJopezJGJql6S32WHa3oqT7FQDLAft4JEDFfxxcm_gxzUSIIWqrUMsi51MD2_FfC6yPZCIYRd8cHcvbxo5I2Bei0Vta6WHJUQXVvNKXXY2z7cxrwTBcf56URSgJrtXn0lCoOPSGcCIRLRG3BV8d2D_zJlq-PNbLrtV_h4mlNkk3bI9H4hEg7XvpY22MEbG6F2xLvKlqocVU')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
-          <div className="absolute inset-0 bg-primary/10 mix-blend-multiply z-10"></div>
-          <div className="relative z-20 p-container-margin max-w-2xl text-center md:text-left">
-            <h1 className="font-display text-display-lg text-on-primary-fixed mb-4 leading-tight">
-              The Standard of Professional Telemedicine
-            </h1>
-            <p className="font-body text-body-lg text-on-primary-fixed-variant opacity-90 max-w-lg">
-              TeleMedHub facilitates secure, efficient, and compassionate care through our integrated Clinical Command Center.
-            </p>
-            <div className="mt-base flex gap-gutter items-center justify-center md:justify-start">
-              <div className="flex flex-col">
-                <span className="font-body text-label-md text-primary font-bold">128-bit</span>
-                <span className="font-body text-label-sm text-on-surface-variant">Encryption</span>
+    <div className="bg-background text-on-surface font-body min-h-screen flex flex-col justify-between selection:bg-primary/20 selection:text-primary">
+      <main className="flex-1 flex flex-col md:flex-row">
+        {/* Left Informational Column */}
+        <div className="hidden md:flex md:w-1/2 lg:w-5/12 bg-surface-container-low border-r border-outline-variant/30 flex-col justify-between p-12">
+          <div>
+            <Link to="/" className="inline-flex items-center gap-3 group mb-12">
+              <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center">
+                <span className="material-symbols-outlined text-[24px]">medical_services</span>
               </div>
-              <div className="w-px h-8 bg-outline-variant"></div>
-              <div className="flex flex-col">
-                <span className="font-body text-label-md text-primary font-bold">HIPAA</span>
-                <span className="font-body text-label-sm text-on-surface-variant">Compliant</span>
+              <div>
+                <span className="font-display font-bold text-xl text-on-surface tracking-tight block">
+                  TeleMedHub
+                </span>
+                <span className="text-[11px] text-on-surface-variant font-medium block">
+                  Telemedicine & Smart Pharmacy
+                </span>
+              </div>
+            </Link>
+
+            <div className="max-w-md">
+              <h2 className="font-display text-3xl font-bold text-on-surface leading-snug mb-4">
+                Pelayanan Medis Terintegrasi & Terpercaya
+              </h2>
+              <p className="text-body-md text-on-surface-variant leading-relaxed mb-8">
+                Masuk untuk mengakses antrean konsultasi dokter, pelacakan resep obat, catatan rekam medis, dan transaksi dompet digital.
+              </p>
+
+              <div className="space-y-4 pt-4 border-t border-outline-variant/20">
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-primary text-[20px] mt-0.5">verified</span>
+                  <div>
+                    <p className="text-sm font-semibold text-on-surface">Dokter Berlisensi Aktif</p>
+                    <p className="text-xs text-on-surface-variant">SIP dan verifikasi kredensial tersertifikasi.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-primary text-[20px] mt-0.5">lock</span>
+                  <div>
+                    <p className="text-sm font-semibold text-on-surface">Audit Log Rekam Medis</p>
+                    <p className="text-xs text-on-surface-variant">Setiap pembacaan dan pembaruan data rekam medis diaudit ketat.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
+          <div className="text-xs text-on-surface-variant/70 pt-8">
+            TeleMedHub System • Version 1.0
+          </div>
         </div>
 
-        {/* Login Column */}
-        <div className="w-full md:w-1/2 lg:w-2/5 flex flex-col items-center justify-center p-container-margin bg-surface z-30 py-12 md:py-0">
+        {/* Right Login Column */}
+        <div className="w-full md:w-1/2 lg:w-7/12 flex flex-col items-center justify-center p-6 md:p-12">
           <div className="w-full max-w-md">
-            {/* Logo & Brand */}
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center mb-2">
-                <span className="material-symbols-outlined text-primary text-4xl mr-2">
-                  medical_services
-                </span>
-                <span className="font-display text-headline-lg text-primary tracking-tight font-bold">
-                  TeleMedHub
-                </span>
-              </div>
-              <p className="font-body text-label-md text-on-surface-variant uppercase tracking-widest font-semibold">
-                Clinical Command Center
+            {/* Mobile Header */}
+            <div className="md:hidden flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
+              <Link to="/" className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-3xl">medical_services</span>
+                <span className="font-display font-bold text-xl text-on-surface">TeleMedHub</span>
+              </Link>
+            </div>
+
+            <div className="mb-8">
+              <h1 className="font-display text-2xl font-bold text-on-surface tracking-tight mb-2">
+                Masuk ke Akun Anda
+              </h1>
+              <p className="text-body-sm text-on-surface-variant">
+                Masukkan email atau ID terdaftar untuk melanjutkan ke dashboard.
               </p>
+            </div>
+
+            {/* Quick Fill Demo Helper */}
+            <div className="mb-6 p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/40">
+              <p className="text-[11px] font-semibold text-on-surface-variant mb-2">
+                💡 Coba Akun Demo (Klik untuk mengisi cepat):
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill("timur@telemedhub.com")}
+                  className="px-2.5 py-1 text-xs rounded-lg bg-surface border border-outline-variant/50 text-on-surface hover:border-primary hover:text-primary transition-colors font-medium"
+                >
+                  Pasien (Timur)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill("andi@telemedhub.com")}
+                  className="px-2.5 py-1 text-xs rounded-lg bg-surface border border-outline-variant/50 text-on-surface hover:border-primary hover:text-primary transition-colors font-medium"
+                >
+                  Dokter (Dr. Andi)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickFill("sinta@telemedhub.com")}
+                  className="px-2.5 py-1 text-xs rounded-lg bg-surface border border-outline-variant/50 text-on-surface hover:border-primary hover:text-primary transition-colors font-medium"
+                >
+                  Farmasi (Sinta)
+                </button>
+              </div>
             </div>
 
             {/* API Error Alert */}
             {apiError && (
-              <div className="mb-4">
+              <div className="mb-5">
                 <Alert variant="error" title="Gagal Masuk">
                   {apiError}
                 </Alert>
               </div>
             )}
 
-            {/* Login Card (Using Reusable Card Component) */}
-            <Card
-              variant="default"
-              className="p-0 rounded-[20px] shadow-level-1 border border-outline-variant/30 animate-in fade-in slide-in-from-bottom-5 duration-700"
-            >
-              <CardContent className="p-card-padding">
-                <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Login Card */}
+            <Card variant="default" className="p-6 rounded-2xl border border-outline-variant/30 shadow-sm">
+              <CardContent className="p-0">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <Input
-                    label="Professional ID / Email"
-                    id="professional-id"
+                    label="Alamat Email / ID"
+                    id="email"
                     name="email"
-                    placeholder="e.g. dr.smith@telemedhub.com"
-                    type="text"
-                    leftIcon="person"
+                    placeholder="nama@telemedhub.com"
+                    type="email"
+                    leftIcon="mail"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     error={validationErrors.email}
                     disabled={loginMutation.isPending}
-                    className="rounded-[16px] py-3.5 bg-surface-bright pl-12 border-outline-variant focus:border-primary"
+                    className="rounded-xl py-3"
                   />
 
                   <div>
@@ -163,37 +215,15 @@ function LoginPage() {
                       label="Password"
                       id="password"
                       name="password"
-                      placeholder="••••••••••••"
+                      placeholder="Masukkan kata sandi"
                       type="password"
                       leftIcon="lock"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       error={validationErrors.password}
                       disabled={loginMutation.isPending}
-                      className="rounded-[16px] py-3.5 bg-surface-bright pl-12 border-outline-variant focus:border-primary"
+                      className="rounded-xl py-3"
                     />
-                    <div className="mt-2 text-right">
-                      <a
-                        className="font-body text-label-sm text-primary hover:underline transition-all font-semibold"
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          alert("Fitur reset password belum diimplementasi di backend.");
-                        }}
-                      >
-                        Forgot Password?
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* MFA Awareness */}
-                  <div className="p-3 rounded-lg bg-surface-container flex items-center gap-3 border border-outline-variant/10">
-                    <span className="material-symbols-outlined text-secondary">
-                      security
-                    </span>
-                    <p className="font-body text-label-sm text-on-surface-variant leading-relaxed">
-                      Multi-Factor Authentication will be requested upon identification.
-                    </p>
                   </div>
 
                   <Button
@@ -201,86 +231,27 @@ function LoginPage() {
                     variant="primary"
                     size="lg"
                     isLoading={loginMutation.isPending}
-                    className="w-full py-4 rounded-[16px] font-bold uppercase tracking-wider shadow-md shadow-primary/10 hover:bg-primary-container active:scale-95 transition-all duration-200"
+                    className="w-full py-3.5 rounded-xl font-bold text-sm shadow-sm mt-2"
                   >
-                    Secure Login
+                    Masuk Sekarang
                   </Button>
                 </form>
               </CardContent>
             </Card>
 
-            {/* Secondary Actions */}
-            <div className="mt-gutter flex flex-col items-center gap-4">
-              <div className="flex gap-gutter font-body text-label-sm">
-                <Link
-                  to="/register"
-                  className="text-on-surface-variant hover:text-primary flex items-center gap-1 transition-colors font-semibold"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    person_add
-                  </span>
-                  Request Access
-                </Link>
-                <div className="w-px h-4 bg-outline-variant"></div>
-                <a
-                  className="text-on-surface-variant hover:text-primary flex items-center gap-1 transition-colors font-semibold"
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert("Seluruh sub-sistem TeleMedHub terpantau Normal.");
-                  }}
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    analytics
-                  </span>
-                  System Status
-                </a>
-              </div>
-
-              {/* Compliance Badge */}
-              <div className="flex items-center gap-2 px-4 py-2 bg-secondary-container/20 border border-secondary/10 rounded-full select-none">
-                <span className="material-symbols-outlined text-secondary text-[16px]">
-                  verified_user
-                </span>
-                <span className="font-body text-label-sm text-secondary uppercase font-bold tracking-wider">
-                  HIPAA Compliant &amp; AES-256 Encrypted
-                </span>
-              </div>
+            <div className="mt-6 text-center text-xs text-on-surface-variant">
+              Belum memiliki akun?{" "}
+              <Link to="/register" className="text-primary font-bold hover:underline">
+                Daftar Akun Baru
+              </Link>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Footer Integration */}
-      <footer className="w-full py-4 px-container-margin flex flex-col md:flex-row justify-between items-center border-t border-outline-variant/30 bg-surface-container-lowest select-none">
-        <div className="flex flex-col md:flex-row items-center gap-gutter mb-4 md:mb-0">
-          <span className="font-headline text-headline-sm font-bold text-primary">
-            TeleMedHub
-          </span>
-          <span className="font-body text-body-sm text-on-surface-variant/80">
-            © 2024 TeleMedHub. HIPAA Compliant &amp; AES-256 Encrypted.
-          </span>
-        </div>
-        <nav className="flex gap-gutter">
-          <a
-            className="font-body text-label-sm text-on-surface-variant hover:underline hover:text-primary transition-all duration-300"
-            href="#"
-          >
-            Privacy Policy
-          </a>
-          <a
-            className="font-body text-label-sm text-on-surface-variant hover:underline hover:text-primary transition-all duration-300"
-            href="#"
-          >
-            Terms of Service
-          </a>
-          <a
-            className="font-body text-label-sm text-on-surface-variant hover:underline hover:text-primary transition-all duration-300"
-            href="#"
-          >
-            Security Architecture
-          </a>
-        </nav>
+      {/* Footer */}
+      <footer className="py-4 px-6 border-t border-outline-variant/20 bg-surface-container-lowest text-center text-xs text-on-surface-variant/70">
+        © {new Date().getFullYear()} TeleMedHub. Hak Cipta Dilindungi.
       </footer>
     </div>
   );

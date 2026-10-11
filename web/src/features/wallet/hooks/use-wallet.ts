@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { walletApi } from "../api/wallet-api";
 import { useToastStore } from "../../../stores/toast-store";
 
@@ -26,7 +26,6 @@ export function useWalletTransactions(page = 1, pageSize = 10) {
 }
 
 export function useTopUpWallet() {
-  const queryClient = useQueryClient();
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({

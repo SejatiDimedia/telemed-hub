@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppointments } from "../../../features/appointment/hooks/use-appointments";
 import { useDoctorProfileMe } from "../../../features/doctor/hooks/use-doctors";
 import { usePatientProfileById } from "../../../features/patient/hooks/use-patient-profile";
@@ -53,6 +53,7 @@ function PatientDetailsCell({ patientId }: { patientId: string }) {
 }
 
 function DoctorDashboard() {
+  const navigate = useNavigate();
   const addToast = useToastStore((state) => state.addToast);
   const { data: doctorProfile, isLoading: isDocLoading } = useDoctorProfileMe();
   const { data: appointments, isLoading: isAptsLoading } = useAppointments();
@@ -117,17 +118,14 @@ function DoctorDashboard() {
     patientId: activePatientId ?? undefined,
   });
 
-  const handleStartConsultation = async (aptId: string, patientId: string) => {
+  const handleStartConsultation = async (aptId: string, _patientId?: string) => {
     try {
       const result = await startConsultation(aptId);
-      // Use actual consultation ID from response for subsequent calls
-      setActiveConsultationId(result?.id ?? aptId);
-      setActivePatientId(patientId);
-      setNotes("");
-      setIsPrescribing(false);
-      setPrescriptionItems([]);
-      setPrescriptionError("");
-      setIsConsultationOpen(true);
+      const targetId = result?.id ?? aptId;
+      void navigate({
+        to: "/doctor/consultation/$consultationId",
+        params: { consultationId: targetId },
+      });
     } catch (err: any) {
       addToast({
         type: "error",
@@ -317,9 +315,14 @@ function DoctorDashboard() {
                             size="sm"
                             isLoading={isStarting && activeConsultationId === apt.id}
                             onClick={() => handleStartConsultation(apt.id, apt.patient_id)}
-                            className="rounded-full px-5 text-xs font-bold"
+                            className="rounded-full px-4 text-xs font-bold flex items-center gap-1.5 ml-auto shadow-xs"
                           >
-                            Mulai Konsultasi
+                            <span className="material-symbols-outlined text-[16px]">
+                              videocam
+                            </span>
+                            {apt.status === "in_progress"
+                              ? "Masuk Ruangan"
+                              : "Mulai di Ruang Konsultasi"}
                           </Button>
                         </td>
                       </tr>
@@ -352,6 +355,7 @@ function DoctorDashboard() {
                       <th className="px-6 py-4 font-bold">Pasien</th>
                       <th className="px-6 py-4 font-bold">Tanggal & Waktu</th>
                       <th className="px-6 py-4 font-bold">Status</th>
+                      <th className="px-6 py-4 font-bold text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/10">
@@ -376,6 +380,24 @@ function DoctorDashboard() {
                         </td>
                         <td className="px-6 py-4 select-none">
                           {getStatusBadge(apt.status)}
+                        </td>
+                        <td className="px-6 py-4 text-right select-none">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              void navigate({
+                                to: "/doctor/consultation/$consultationId",
+                                params: { consultationId: apt.id },
+                              })
+                            }
+                            className="rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1 ml-auto"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              chat
+                            </span>
+                            Buka Sesi
+                          </Button>
                         </td>
                       </tr>
                     ))}

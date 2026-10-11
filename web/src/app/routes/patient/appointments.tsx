@@ -528,15 +528,37 @@ function PatientAppointmentsPage() {
                               {getAppointmentStatusBadge(apt.status)}
                             </td>
                             <td className="px-6 py-4 text-right select-none">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!canCancel || isCancellingPending}
-                                onClick={() => handleCancelClick(apt.id)}
-                                className="text-error border-error/20 hover:bg-error/5 py-1 px-3 rounded-full text-xs font-bold"
-                              >
-                                Batalkan
-                              </Button>
+                              <div className="flex items-center justify-end gap-2">
+                                {apt.status !== "cancelled" && (
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() =>
+                                      void navigate({
+                                        to: "/patient/consultation/$consultationId",
+                                        params: { consultationId: apt.id },
+                                      })
+                                    }
+                                    className="py-1 px-3 rounded-full text-xs font-bold flex items-center gap-1 shadow-xs"
+                                  >
+                                    <span className="material-symbols-outlined text-[16px]">
+                                      videocam
+                                    </span>
+                                    {apt.status === "completed" ? "Lihat Sesi" : "Masuk Ruangan"}
+                                  </Button>
+                                )}
+                                {canCancel && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={isCancellingPending}
+                                    onClick={() => handleCancelClick(apt.id)}
+                                    className="text-error border-error/20 hover:bg-error/5 py-1 px-3 rounded-full text-xs font-bold"
+                                  >
+                                    Batalkan
+                                  </Button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );

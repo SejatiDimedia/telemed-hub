@@ -30,7 +30,9 @@ import { Route as DoctorSettingsRouteImport } from './routes/doctor/settings'
 import { Route as DoctorScheduleRouteImport } from './routes/doctor/schedule'
 import { Route as DevComponentsRouteImport } from './routes/_dev/components'
 import { Route as PatientAiTriageIndexRouteImport } from './routes/patient/ai-triage/index'
+import { Route as PatientConsultationConsultationIdRouteImport } from './routes/patient/consultation/$consultationId'
 import { Route as PatientAiTriageSessionIdRouteImport } from './routes/patient/ai-triage/$sessionId'
+import { Route as DoctorConsultationConsultationIdRouteImport } from './routes/doctor/consultation/$consultationId'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -136,11 +138,23 @@ const PatientAiTriageIndexRoute = PatientAiTriageIndexRouteImport.update({
   path: '/ai-triage/',
   getParentRoute: () => PatientRouteRoute,
 } as any)
+const PatientConsultationConsultationIdRoute =
+  PatientConsultationConsultationIdRouteImport.update({
+    id: '/consultation/$consultationId',
+    path: '/consultation/$consultationId',
+    getParentRoute: () => PatientRouteRoute,
+  } as any)
 const PatientAiTriageSessionIdRoute =
   PatientAiTriageSessionIdRouteImport.update({
     id: '/ai-triage/$sessionId',
     path: '/ai-triage/$sessionId',
     getParentRoute: () => PatientRouteRoute,
+  } as any)
+const DoctorConsultationConsultationIdRoute =
+  DoctorConsultationConsultationIdRouteImport.update({
+    id: '/consultation/$consultationId',
+    path: '/consultation/$consultationId',
+    getParentRoute: () => DoctorRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -163,7 +177,9 @@ export interface FileRoutesByFullPath {
   '/doctor/': typeof DoctorIndexRoute
   '/patient/': typeof PatientIndexRoute
   '/pharmacy/': typeof PharmacyIndexRoute
+  '/doctor/consultation/$consultationId': typeof DoctorConsultationConsultationIdRoute
   '/patient/ai-triage/$sessionId': typeof PatientAiTriageSessionIdRoute
+  '/patient/consultation/$consultationId': typeof PatientConsultationConsultationIdRoute
   '/patient/ai-triage/': typeof PatientAiTriageIndexRoute
 }
 export interface FileRoutesByTo {
@@ -182,7 +198,9 @@ export interface FileRoutesByTo {
   '/doctor': typeof DoctorIndexRoute
   '/patient': typeof PatientIndexRoute
   '/pharmacy': typeof PharmacyIndexRoute
+  '/doctor/consultation/$consultationId': typeof DoctorConsultationConsultationIdRoute
   '/patient/ai-triage/$sessionId': typeof PatientAiTriageSessionIdRoute
+  '/patient/consultation/$consultationId': typeof PatientConsultationConsultationIdRoute
   '/patient/ai-triage': typeof PatientAiTriageIndexRoute
 }
 export interface FileRoutesById {
@@ -207,7 +225,9 @@ export interface FileRoutesById {
   '/doctor/': typeof DoctorIndexRoute
   '/patient/': typeof PatientIndexRoute
   '/pharmacy/': typeof PharmacyIndexRoute
+  '/doctor/consultation/$consultationId': typeof DoctorConsultationConsultationIdRoute
   '/patient/ai-triage/$sessionId': typeof PatientAiTriageSessionIdRoute
+  '/patient/consultation/$consultationId': typeof PatientConsultationConsultationIdRoute
   '/patient/ai-triage/': typeof PatientAiTriageIndexRoute
 }
 export interface FileRouteTypes {
@@ -232,7 +252,9 @@ export interface FileRouteTypes {
     | '/doctor/'
     | '/patient/'
     | '/pharmacy/'
+    | '/doctor/consultation/$consultationId'
     | '/patient/ai-triage/$sessionId'
+    | '/patient/consultation/$consultationId'
     | '/patient/ai-triage/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -251,7 +273,9 @@ export interface FileRouteTypes {
     | '/doctor'
     | '/patient'
     | '/pharmacy'
+    | '/doctor/consultation/$consultationId'
     | '/patient/ai-triage/$sessionId'
+    | '/patient/consultation/$consultationId'
     | '/patient/ai-triage'
   id:
     | '__root__'
@@ -275,7 +299,9 @@ export interface FileRouteTypes {
     | '/doctor/'
     | '/patient/'
     | '/pharmacy/'
+    | '/doctor/consultation/$consultationId'
     | '/patient/ai-triage/$sessionId'
+    | '/patient/consultation/$consultationId'
     | '/patient/ai-triage/'
   fileRoutesById: FileRoutesById
 }
@@ -439,12 +465,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PatientAiTriageIndexRouteImport
       parentRoute: typeof PatientRouteRoute
     }
+    '/patient/consultation/$consultationId': {
+      id: '/patient/consultation/$consultationId'
+      path: '/consultation/$consultationId'
+      fullPath: '/patient/consultation/$consultationId'
+      preLoaderRoute: typeof PatientConsultationConsultationIdRouteImport
+      parentRoute: typeof PatientRouteRoute
+    }
     '/patient/ai-triage/$sessionId': {
       id: '/patient/ai-triage/$sessionId'
       path: '/ai-triage/$sessionId'
       fullPath: '/patient/ai-triage/$sessionId'
       preLoaderRoute: typeof PatientAiTriageSessionIdRouteImport
       parentRoute: typeof PatientRouteRoute
+    }
+    '/doctor/consultation/$consultationId': {
+      id: '/doctor/consultation/$consultationId'
+      path: '/consultation/$consultationId'
+      fullPath: '/doctor/consultation/$consultationId'
+      preLoaderRoute: typeof DoctorConsultationConsultationIdRouteImport
+      parentRoute: typeof DoctorRouteRoute
     }
   }
 }
@@ -465,12 +505,14 @@ interface DoctorRouteRouteChildren {
   DoctorScheduleRoute: typeof DoctorScheduleRoute
   DoctorSettingsRoute: typeof DoctorSettingsRoute
   DoctorIndexRoute: typeof DoctorIndexRoute
+  DoctorConsultationConsultationIdRoute: typeof DoctorConsultationConsultationIdRoute
 }
 
 const DoctorRouteRouteChildren: DoctorRouteRouteChildren = {
   DoctorScheduleRoute: DoctorScheduleRoute,
   DoctorSettingsRoute: DoctorSettingsRoute,
   DoctorIndexRoute: DoctorIndexRoute,
+  DoctorConsultationConsultationIdRoute: DoctorConsultationConsultationIdRoute,
 }
 
 const DoctorRouteRouteWithChildren = DoctorRouteRoute._addFileChildren(
@@ -485,6 +527,7 @@ interface PatientRouteRouteChildren {
   PatientWalletRoute: typeof PatientWalletRoute
   PatientIndexRoute: typeof PatientIndexRoute
   PatientAiTriageSessionIdRoute: typeof PatientAiTriageSessionIdRoute
+  PatientConsultationConsultationIdRoute: typeof PatientConsultationConsultationIdRoute
   PatientAiTriageIndexRoute: typeof PatientAiTriageIndexRoute
 }
 
@@ -496,6 +539,8 @@ const PatientRouteRouteChildren: PatientRouteRouteChildren = {
   PatientWalletRoute: PatientWalletRoute,
   PatientIndexRoute: PatientIndexRoute,
   PatientAiTriageSessionIdRoute: PatientAiTriageSessionIdRoute,
+  PatientConsultationConsultationIdRoute:
+    PatientConsultationConsultationIdRoute,
   PatientAiTriageIndexRoute: PatientAiTriageIndexRoute,
 }
 

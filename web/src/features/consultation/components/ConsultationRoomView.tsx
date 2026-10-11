@@ -13,6 +13,7 @@ import { PatientClinicalSummary } from "./PatientClinicalSummary";
 import { Dialog } from "../../../components/ui/Dialog";
 import { Button } from "../../../components/ui/Button";
 import { Badge } from "../../../components/ui/Badge";
+import { useToastStore } from "../../../stores/toast-store";
 import type { ConsultationMessage } from "../types";
 
 export interface ConsultationRoomViewProps {
@@ -23,6 +24,7 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
   const navigate = useNavigate();
   const { user } = useAuth();
   const isDoctor = user?.role === "doctor";
+  const addToast = useToastStore((state) => state.addToast);
 
   // Active tab on right sidebar (for doctor: 'chat' | 'clinical')
   const [activeTab, setActiveTab] = useState<"chat" | "clinical">("chat");
@@ -68,6 +70,16 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
     consultationId: canonicalConsultationId,
     isDoctor,
     onNewMessage: handleIncomingWSMessage,
+    onSessionEnded: () => {
+      if (!isDoctor) {
+        addToast({
+          type: "info",
+          title: "Sesi Selesai",
+          message: "Dokter telah menyelesaikan sesi konsultasi ini. Anda dialihkan ke halaman janji temu.",
+        });
+        void navigate({ to: "/patient/appointments" });
+      }
+    },
   });
 
   // Combine initial room messages with real-time messages
@@ -100,11 +112,17 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
   const handleConfirmEndCall = async () => {
     if (isDoctor) {
       try {
-        await completeConsultation(consultationId);
+        await completeConsultation(canonicalConsultationId);
         setIsEndCallDialogOpen(false);
         void navigate({ to: "/doctor" });
-      } catch {
-        // Handled
+      } catch (err: any) {
+        addToast({
+          type: "info",
+          title: "Sesi Selesai",
+          message: err instanceof Error ? err.message : "Sesi konsultasi medis telah ditutup.",
+        });
+        setIsEndCallDialogOpen(false);
+        void navigate({ to: "/doctor" });
       }
     } else {
       setIsEndCallDialogOpen(false);

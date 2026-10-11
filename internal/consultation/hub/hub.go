@@ -144,6 +144,16 @@ func (h *Hub) BroadcastChat(consultationID uuid.UUID, msg *dto.MessageResponse) 
 	h.broadcastToRoom(consultationID, nil, wsMsg)
 }
 
+// BroadcastSessionEnded broadcasts that the consultation session has been finished.
+func (h *Hub) BroadcastSessionEnded(consultationID uuid.UUID) {
+	wsMsg := &WSMessage{
+		Type:           "session_ended",
+		ConsultationID: consultationID.String(),
+		Timestamp:      time.Now().UTC().Format(time.RFC3339),
+	}
+	h.broadcastToRoom(consultationID, nil, wsMsg)
+}
+
 func (h *Hub) unregister(client *Client) {
 	h.mu.Lock()
 	if clients, ok := h.rooms[client.consultationID]; ok {

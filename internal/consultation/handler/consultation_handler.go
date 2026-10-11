@@ -169,6 +169,15 @@ func (h *ConsultationHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.hub != nil {
+		canonicalID, parseErr := uuid.Parse(resp.ID)
+		if parseErr == nil {
+			h.hub.BroadcastSessionEnded(canonicalID)
+		} else {
+			h.hub.BroadcastSessionEnded(id)
+		}
+	}
+
 	httpcallSuccess(w, resp)
 }
 

@@ -6,12 +6,14 @@ export interface UseConsultationWebRTCOptions {
   consultationId: string;
   isDoctor?: boolean;
   onNewMessage?: (msg: ConsultationMessage) => void;
+  onSessionEnded?: () => void;
 }
 
 export function useConsultationWebRTC({
   consultationId,
   isDoctor = false,
   onNewMessage,
+  onSessionEnded,
 }: UseConsultationWebRTCOptions) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -29,6 +31,8 @@ export function useConsultationWebRTC({
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
   const onNewMessageRef = useRef(onNewMessage);
   onNewMessageRef.current = onNewMessage;
+  const onSessionEndedRef = useRef(onSessionEnded);
+  onSessionEndedRef.current = onSessionEnded;
 
   const isDoctorRef = useRef(isDoctor);
   isDoctorRef.current = isDoctor;
@@ -303,6 +307,19 @@ export function useConsultationWebRTC({
             case "chat_message": {
               if (data.payload && onNewMessageRef.current) {
                 onNewMessageRef.current(data.payload as ConsultationMessage);
+              }
+              break;
+            }
+
+            case "session_ended": {
+              setIsPeerConnected(false);
+              setRemoteStream(null);
+              if (pcRef.current) {
+                pcRef.current.close();
+                pcRef.current = null;
+              }
+              if (onSessionEndedRef.current) {
+                onSessionEndedRef.current();
               }
               break;
             }

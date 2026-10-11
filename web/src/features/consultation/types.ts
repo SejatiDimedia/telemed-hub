@@ -54,7 +54,8 @@ export interface WSSignalingMessage {
     | "chat_message"
     | "peer_joined"
     | "peer_left"
-    | "media_state";
+    | "media_state"
+    | "session_ended";
   payload: any;
 }
 

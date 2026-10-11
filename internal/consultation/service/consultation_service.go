@@ -139,14 +139,19 @@ func (s *ConsultationServiceImpl) Complete(ctx context.Context, id uuid.UUID, do
 		return nil, err
 	}
 
-	if cons.Status != "in_progress" {
-		return nil, fmt.Errorf("%w: current status is %s, expected in_progress", ErrInvalidTransition, cons.Status)
-	}
-
 	// Verify the caller is the assigned doctor of the appointment
 	_, err = s.appointmentSvc.GetByID(ctx, cons.AppointmentID, doctorUserID, []string{"doctor"})
 	if err != nil {
 		return nil, ErrUnauthorized
+	}
+
+	// If already completed, return current state idempotently
+	if cons.Status == "completed" {
+		return s.toResponse(cons), nil
+	}
+
+	if cons.Status != "in_progress" {
+		return nil, fmt.Errorf("%w: current status is %s, expected in_progress", ErrInvalidTransition, cons.Status)
 	}
 
 	now := time.Now().UTC()
@@ -170,8 +175,8 @@ func (s *ConsultationServiceImpl) UpdateNotes(ctx context.Context, id uuid.UUID,
 		return nil, err
 	}
 
-	if cons.Status != "in_progress" {
-		return nil, fmt.Errorf("%w: current status is %s, expected in_progress", ErrInvalidTransition, cons.Status)
+	if cons.Status != "in_progress" && cons.Status != "completed" {
+		return nil, fmt.Errorf("%w: current status is %s, expected in_progress or completed", ErrInvalidTransition, cons.Status)
 	}
 
 	// Verify doctor authorization

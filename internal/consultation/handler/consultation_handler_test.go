@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -66,6 +67,30 @@ func (m *MockConsultationService) CancelConsultation(ctx context.Context, appoin
 	return args.Error(0)
 }
 
+func (m *MockConsultationService) GetRoom(ctx context.Context, consultationID uuid.UUID, userID uuid.UUID, roles []string) (*dto.ConsultationRoomResponse, error) {
+	args := m.Called(ctx, consultationID, userID, roles)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.ConsultationRoomResponse), args.Error(1)
+}
+
+func (m *MockConsultationService) SendMessage(ctx context.Context, consultationID uuid.UUID, senderID uuid.UUID, req dto.SendMessageRequest) (*dto.MessageResponse, error) {
+	args := m.Called(ctx, consultationID, senderID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.MessageResponse), args.Error(1)
+}
+
+func (m *MockConsultationService) ListMessages(ctx context.Context, consultationID uuid.UUID, userID uuid.UUID, roles []string) ([]dto.MessageResponse, error) {
+	args := m.Called(ctx, consultationID, userID, roles)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]dto.MessageResponse), args.Error(1)
+}
+
 func TestConsultationHandler_Start(t *testing.T) {
 	mockSvc := new(MockConsultationService)
 	cfg := &config.Config{}
@@ -124,3 +149,155 @@ func TestConsultationHandler_Start(t *testing.T) {
 		mockSvc.AssertExpectations(t)
 	})
 }
+
+func TestConsultationHandler_GetRoom(t *testing.T) {
+	mockSvc := new(MockConsultationService)
+	cfg := &config.Config{}
+	log := logger.Setup("error")
+	h := NewConsultationHandler(mockSvc, cfg, nil, log)
+
+	r := chi.NewRouter()
+	r.Get("/consultations/{id}/room", h.GetRoom)
+
+	consID := uuid.New()
+	userID := uuid.New()
+
+	t.Run("Success get room details", func(t *testing.T) {
+		expectedResp := &dto.ConsultationRoomResponse{
+			ConsultationID: consID.String(),
+			Status:         "in_progress",
+			Doctor: dto.ConsultationParticipant{
+				UserID: userID.String(),
+				Name:   "Dr. John",
+				Role:   "doctor",
+			},
+			Patient: dto.ConsultationParticipant{
+				UserID: uuid.New().String(),
+				Name:   "Jane Doe",
+				Role:   "patient",
+			},
+		}
+
+		mockSvc.On("GetRoom", mock.Anything, consID, userID, []string{"doctor"}).Return(expectedResp, nil).Once()
+
+		req, _ := http.NewRequest(http.MethodGet, "/consultations/"+consID.String()+"/room", nil)
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, userID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"doctor"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+		var envelope struct {
+			Success bool                         `json:"success"`
+			Data    dto.ConsultationRoomResponse `json:"data"`
+		}
+		err := json.NewDecoder(rec.Body).Decode(&envelope)
+		require.NoError(t, err)
+		assert.True(t, envelope.Success)
+		assert.Equal(t, consID.String(), envelope.Data.ConsultationID)
+		mockSvc.AssertExpectations(t)
+	})
+
+	t.Run("Unauthorized get room details", func(t *testing.T) {
+		mockSvc.On("GetRoom", mock.Anything, consID, userID, []string{"doctor"}).Return(nil, service.ErrUnauthorized).Once()
+
+		req, _ := http.NewRequest(http.MethodGet, "/consultations/"+consID.String()+"/room", nil)
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, userID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"doctor"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusForbidden, rec.Code)
+		mockSvc.AssertExpectations(t)
+	})
+}
+
+func TestConsultationHandler_Messages(t *testing.T) {
+	mockSvc := new(MockConsultationService)
+	cfg := &config.Config{}
+	log := logger.Setup("error")
+	h := NewConsultationHandler(mockSvc, cfg, nil, log)
+
+	r := chi.NewRouter()
+	r.Post("/consultations/{id}/messages", h.SendMessage)
+	r.Get("/consultations/{id}/messages", h.ListMessages)
+
+	consID := uuid.New()
+	userID := uuid.New()
+
+	t.Run("Success send message", func(t *testing.T) {
+		sendReq := dto.SendMessageRequest{
+			Message: "Hello doctor",
+		}
+		expectedResp := &dto.MessageResponse{
+			ID:             uuid.New().String(),
+			ConsultationID: consID.String(),
+			SenderID:       userID.String(),
+			SenderName:     "Jane Doe",
+			SenderRole:     "patient",
+			Message:        "Hello doctor",
+		}
+
+		mockSvc.On("SendMessage", mock.Anything, consID, userID, sendReq).Return(expectedResp, nil).Once()
+
+		bodyBytes, _ := json.Marshal(sendReq)
+		req, _ := http.NewRequest(http.MethodPost, "/consultations/"+consID.String()+"/messages", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, userID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"patient"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		var envelope struct {
+			Success bool                `json:"success"`
+			Data    dto.MessageResponse `json:"data"`
+		}
+		err := json.NewDecoder(rec.Body).Decode(&envelope)
+		require.NoError(t, err)
+		assert.True(t, envelope.Success)
+		assert.Equal(t, "Hello doctor", envelope.Data.Message)
+		mockSvc.AssertExpectations(t)
+	})
+
+	t.Run("Success list messages", func(t *testing.T) {
+		expectedResp := []dto.MessageResponse{
+			{
+				ID:             uuid.New().String(),
+				ConsultationID: consID.String(),
+				SenderID:       userID.String(),
+				SenderName:     "Jane Doe",
+				SenderRole:     "patient",
+				Message:        "Hello doctor",
+			},
+		}
+
+		mockSvc.On("ListMessages", mock.Anything, consID, userID, []string{"patient"}).Return(expectedResp, nil).Once()
+
+		req, _ := http.NewRequest(http.MethodGet, "/consultations/"+consID.String()+"/messages", nil)
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, userID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"patient"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+		var envelope struct {
+			Success bool                  `json:"success"`
+			Data    []dto.MessageResponse `json:"data"`
+		}
+		err := json.NewDecoder(rec.Body).Decode(&envelope)
+		require.NoError(t, err)
+		assert.True(t, envelope.Success)
+		assert.Len(t, envelope.Data, 1)
+		mockSvc.AssertExpectations(t)
+	})
+}
+

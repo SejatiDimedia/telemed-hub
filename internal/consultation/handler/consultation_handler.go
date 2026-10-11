@@ -6,11 +6,14 @@ import (
 	"log/slog"
 	"net/http"
 
+	"strings"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/timurdianradhasejati/telemed_hub/internal/config"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/dto"
+	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/hub"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/service"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/httpresponse"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/middleware"
@@ -21,6 +24,7 @@ type ConsultationHandler struct {
 	cfg    *config.Config
 	rdb    *redis.Client
 	logger *slog.Logger
+	hub    *hub.Hub
 }
 
 func NewConsultationHandler(svc service.ConsultationService, cfg *config.Config, rdb *redis.Client, logger *slog.Logger) *ConsultationHandler {
@@ -29,6 +33,7 @@ func NewConsultationHandler(svc service.ConsultationService, cfg *config.Config,
 		cfg:    cfg,
 		rdb:    rdb,
 		logger: logger,
+		hub:    hub.NewHub(svc, logger),
 	}
 }
 
@@ -40,6 +45,10 @@ func (h *ConsultationHandler) Routes() chi.Router {
 		r.Use(middleware.AuthMiddleware(h.cfg, h.rdb))
 
 		r.Get("/{id}", h.GetByID)
+		r.Get("/{id}/room", h.GetRoom)
+		r.Get("/{id}/messages", h.ListMessages)
+		r.Post("/{id}/messages", h.SendMessage)
+		r.Get("/{id}/ws", h.ServeWS)
 		r.Post("/{id}/start", h.Start)
 		r.Post("/{id}/complete", h.Complete)
 		r.Put("/{id}/notes", h.UpdateNotes)
@@ -199,6 +208,146 @@ func (h *ConsultationHandler) UpdateNotes(w http.ResponseWriter, r *http.Request
 	}
 
 	httpcallSuccess(w, resp)
+}
+
+func (h *ConsultationHandler) GetRoom(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+	roles, err := middleware.GetUserRoles(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "INVALID_CONSULTATION_ID", "invalid consultation UUID format")
+		return
+	}
+
+	room, err := h.svc.GetRoom(r.Context(), id, userID, roles)
+	if err != nil {
+		if errors.Is(err, service.ErrUnauthorized) {
+			httpresponse.Error(w, http.StatusForbidden, "FORBIDDEN", "unauthorized access to consultation room")
+			return
+		}
+		httpresponse.Error(w, http.StatusNotFound, "ROOM_NOT_FOUND", "consultation room not found")
+		return
+	}
+
+	httpresponse.Success(w, room)
+}
+
+func (h *ConsultationHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+	roles, err := middleware.GetUserRoles(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "INVALID_CONSULTATION_ID", "invalid consultation UUID format")
+		return
+	}
+
+	messages, err := h.svc.ListMessages(r.Context(), id, userID, roles)
+	if err != nil {
+		if errors.Is(err, service.ErrUnauthorized) {
+			httpresponse.Error(w, http.StatusForbidden, "FORBIDDEN", "unauthorized access to consultation messages")
+			return
+		}
+		httpresponse.Error(w, http.StatusNotFound, "NOT_FOUND", "consultation not found")
+		return
+	}
+
+	httpresponse.Success(w, messages)
+}
+
+func (h *ConsultationHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "INVALID_CONSULTATION_ID", "invalid consultation UUID format")
+		return
+	}
+
+	var req dto.SendMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "INVALID_REQUEST_PAYLOAD", "malformed request payload")
+		return
+	}
+	if strings.TrimSpace(req.Message) == "" {
+		httpresponse.Error(w, http.StatusBadRequest, "EMPTY_MESSAGE", "message cannot be empty")
+		return
+	}
+
+	msg, err := h.svc.SendMessage(r.Context(), id, userID, req)
+	if err != nil {
+		if errors.Is(err, service.ErrUnauthorized) {
+			httpresponse.Error(w, http.StatusForbidden, "FORBIDDEN", "unauthorized to send message to this consultation")
+			return
+		}
+		httpresponse.Error(w, http.StatusNotFound, "NOT_FOUND", "consultation not found")
+		return
+	}
+
+	httpresponse.JSON(w, http.StatusCreated, httpresponse.Response{
+		Success: true,
+		Data:    msg,
+	})
+}
+
+func (h *ConsultationHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+	roles, err := middleware.GetUserRoles(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "INVALID_CONSULTATION_ID", "invalid consultation UUID format")
+		return
+	}
+
+	// Verify caller belongs to this room
+	room, err := h.svc.GetRoom(r.Context(), id, userID, roles)
+	if err != nil {
+		if errors.Is(err, service.ErrUnauthorized) {
+			httpresponse.Error(w, http.StatusForbidden, "FORBIDDEN", "unauthorized access to consultation room")
+			return
+		}
+		httpresponse.Error(w, http.StatusNotFound, "ROOM_NOT_FOUND", "consultation room not found")
+		return
+	}
+
+	userName := room.Patient.Name
+	userRole := "patient"
+	if userID.String() == room.Doctor.UserID {
+		userName = room.Doctor.Name
+		userRole = "doctor"
+	}
+
+	h.hub.ServeWS(w, r, id, userID, userName, userRole)
 }
 
 func httpcallUnauthorized(w http.ResponseWriter) {

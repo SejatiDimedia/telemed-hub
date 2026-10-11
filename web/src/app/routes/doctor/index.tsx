@@ -21,6 +21,18 @@ export const Route = createFileRoute("/doctor/")({
   component: DoctorDashboard,
 });
 
+// Component to dynamically fetch and display patient avatar in list
+function PatientAvatarCell({ patientId }: { patientId: string }) {
+  const { data: patientProfile } = usePatientProfileById(patientId);
+  return (
+    <Avatar
+      src={patientProfile?.profile_picture_url}
+      name={patientProfile?.full_name ?? "Patient"}
+      size="sm"
+    />
+  );
+}
+
 // Component to dynamically fetch and display patient name in list
 function PatientNameCell({ patientId }: { patientId: string }) {
   const { data: patientProfile, isLoading } = usePatientProfileById(patientId);
@@ -284,7 +296,7 @@ function DoctorDashboard() {
                     {todayQueue.map((apt) => (
                       <tr key={apt.id} className="hover:bg-surface-container-lowest/30 transition-colors">
                         <td className="px-6 py-4 flex items-center gap-3">
-                          <Avatar name="Patient" size="sm" />
+                          <PatientAvatarCell patientId={apt.patient_id} />
                           <div>
                             <PatientNameCell patientId={apt.patient_id} />
                             <PatientDetailsCell patientId={apt.patient_id} />
@@ -346,7 +358,7 @@ function DoctorDashboard() {
                     {historyQueue.map((apt) => (
                       <tr key={apt.id} className="hover:bg-surface-container-lowest/30 transition-colors">
                         <td className="px-6 py-4 flex items-center gap-3">
-                          <Avatar name="Patient" size="sm" />
+                          <PatientAvatarCell patientId={apt.patient_id} />
                           <div>
                             <PatientNameCell patientId={apt.patient_id} />
                             <PatientDetailsCell patientId={apt.patient_id} />
@@ -422,7 +434,7 @@ function DoctorDashboard() {
           {/* Patient Card Info */}
           <div className="col-span-12 md:col-span-4 flex flex-col gap-4">
             <div className="p-5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col items-center text-center select-none">
-              <Avatar name={activePatient?.full_name ?? "Patient"} size="lg" className="mb-3" />
+              <Avatar src={activePatient?.profile_picture_url} name={activePatient?.full_name ?? "Patient"} size="lg" className="mb-3" />
               <h4 className="font-bold text-on-surface text-md leading-tight">
                 {activePatient?.full_name ?? "Patient"}
               </h4>

@@ -94,3 +94,85 @@ func (r *PostgresRepository) Update(ctx context.Context, cons *model.Consultatio
 
 	return nil
 }
+
+func (r *PostgresRepository) GetRoomDetails(ctx context.Context, consultationID uuid.UUID) (*model.RoomDetails, error) {
+	query := `
+		SELECT 
+			c.id, c.appointment_id, c.status, c.notes,
+			doc_u.id, doc_u.full_name, doc_u.profile_picture_url, spec.name,
+			pat_u.id, pat_u.full_name, pat_u.profile_picture_url, pat.gender, pat.blood_type, pat.date_of_birth
+		FROM consultations c
+		JOIN appointments a ON c.appointment_id = a.id
+		JOIN doctors d ON a.doctor_id = d.id
+		JOIN users doc_u ON d.user_id = doc_u.id
+		LEFT JOIN specialties spec ON d.specialty_id = spec.id
+		JOIN patients pat ON a.patient_id = pat.id
+		JOIN users pat_u ON pat.user_id = pat_u.id
+		WHERE c.id = $1`
+
+	var rd model.RoomDetails
+	err := r.db.QueryRow(ctx, query, consultationID).Scan(
+		&rd.ConsultationID, &rd.AppointmentID, &rd.Status, &rd.Notes,
+		&rd.DoctorUserID, &rd.DoctorName, &rd.DoctorAvatar, &rd.DoctorSpecialty,
+		&rd.PatientUserID, &rd.PatientName, &rd.PatientAvatar, &rd.PatientGender, &rd.PatientBlood, &rd.PatientDOB,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrConsultationNotFound
+		}
+		return nil, fmt.Errorf("failed to fetch consultation room details: %w", err)
+	}
+
+	return &rd, nil
+}
+
+func (r *PostgresRepository) SaveMessage(ctx context.Context, msg *model.ConsultationMessage) error {
+	if msg.ID == uuid.Nil {
+		msg.ID = uuid.New()
+	}
+	if msg.CreatedAt.IsZero() {
+		msg.CreatedAt = time.Now().UTC()
+	}
+
+	query := `
+		INSERT INTO consultation_messages (id, consultation_id, sender_id, message, attachment_url, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6)`
+
+	_, err := r.db.Exec(ctx, query, msg.ID, msg.ConsultationID, msg.SenderID, msg.Message, msg.AttachmentURL, msg.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to save consultation message: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PostgresRepository) ListMessages(ctx context.Context, consultationID uuid.UUID) ([]*model.ConsultationMessage, error) {
+	query := `
+		SELECT 
+			m.id, m.consultation_id, m.sender_id, u.full_name, COALESCE(r.name, 'user'), m.message, m.attachment_url, m.created_at
+		FROM consultation_messages m
+		JOIN users u ON m.sender_id = u.id
+		LEFT JOIN user_roles ur ON u.id = ur.user_id
+		LEFT JOIN roles r ON ur.role_id = r.id
+		WHERE m.consultation_id = $1
+		ORDER BY m.created_at ASC`
+
+	rows, err := r.db.Query(ctx, query, consultationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list consultation messages: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []*model.ConsultationMessage
+	for rows.Next() {
+		var msg model.ConsultationMessage
+		if err := rows.Scan(
+			&msg.ID, &msg.ConsultationID, &msg.SenderID, &msg.SenderName, &msg.SenderRole, &msg.Message, &msg.AttachmentURL, &msg.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan consultation message: %w", err)
+		}
+		messages = append(messages, &msg)
+	}
+
+	return messages, nil
+}

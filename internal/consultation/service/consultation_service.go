@@ -207,6 +207,148 @@ func (s *ConsultationServiceImpl) CancelConsultation(ctx context.Context, appoin
 	return s.repo.Update(ctx, cons)
 }
 
+func (s *ConsultationServiceImpl) GetRoom(ctx context.Context, consultationID uuid.UUID, userID uuid.UUID, roles []string) (*dto.ConsultationRoomResponse, error) {
+	cons, err := s.getConsultation(ctx, consultationID, userID, roles)
+	if err != nil {
+		return nil, err
+	}
+
+	rd, err := s.repo.GetRoomDetails(ctx, cons.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify authorization: must be the assigned doctor, the patient, or an admin
+	isAdmin := false
+	for _, r := range roles {
+		if r == "admin" {
+			isAdmin = true
+			break
+		}
+	}
+	if !isAdmin && userID != rd.DoctorUserID && userID != rd.PatientUserID {
+		return nil, ErrUnauthorized
+	}
+
+	msgs, err := s.repo.ListMessages(ctx, cons.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	msgResponses := make([]dto.MessageResponse, 0, len(msgs))
+	for _, m := range msgs {
+		msgResponses = append(msgResponses, *s.toMessageResponse(m))
+	}
+
+	var dobStr *string
+	if rd.PatientDOB != nil {
+		dStr := rd.PatientDOB.Format("2006-01-02")
+		dobStr = &dStr
+	}
+
+	return &dto.ConsultationRoomResponse{
+		ConsultationID: rd.ConsultationID.String(),
+		AppointmentID:  rd.AppointmentID.String(),
+		Status:         rd.Status,
+		Notes:          rd.Notes,
+		Doctor: dto.ConsultationParticipant{
+			UserID:            rd.DoctorUserID.String(),
+			Name:              rd.DoctorName,
+			Role:              "doctor",
+			ProfilePictureURL: rd.DoctorAvatar,
+			Specialty:         rd.DoctorSpecialty,
+		},
+		Patient: dto.ConsultationParticipant{
+			UserID:            rd.PatientUserID.String(),
+			Name:              rd.PatientName,
+			Role:              "patient",
+			ProfilePictureURL: rd.PatientAvatar,
+			Gender:            rd.PatientGender,
+			BloodType:         rd.PatientBlood,
+			DateOfBirth:       dobStr,
+		},
+		Messages: msgResponses,
+	}, nil
+}
+
+func (s *ConsultationServiceImpl) SendMessage(ctx context.Context, consultationID uuid.UUID, senderID uuid.UUID, req dto.SendMessageRequest) (*dto.MessageResponse, error) {
+	rd, err := s.repo.GetRoomDetails(ctx, consultationID)
+	if err != nil {
+		return nil, err
+	}
+
+	if senderID != rd.DoctorUserID && senderID != rd.PatientUserID {
+		return nil, ErrUnauthorized
+	}
+
+	senderRole := "patient"
+	senderName := rd.PatientName
+	if senderID == rd.DoctorUserID {
+		senderRole = "doctor"
+		senderName = rd.DoctorName
+	}
+
+	msg := &model.ConsultationMessage{
+		ID:             uuid.New(),
+		ConsultationID: consultationID,
+		SenderID:       senderID,
+		SenderName:     senderName,
+		SenderRole:     senderRole,
+		Message:        req.Message,
+		AttachmentURL:  req.AttachmentURL,
+		CreatedAt:      time.Now().UTC(),
+	}
+
+	if err := s.repo.SaveMessage(ctx, msg); err != nil {
+		return nil, err
+	}
+
+	return s.toMessageResponse(msg), nil
+}
+
+func (s *ConsultationServiceImpl) ListMessages(ctx context.Context, consultationID uuid.UUID, userID uuid.UUID, roles []string) ([]dto.MessageResponse, error) {
+	rd, err := s.repo.GetRoomDetails(ctx, consultationID)
+	if err != nil {
+		return nil, err
+	}
+
+	isAdmin := false
+	for _, r := range roles {
+		if r == "admin" {
+			isAdmin = true
+			break
+		}
+	}
+	if !isAdmin && userID != rd.DoctorUserID && userID != rd.PatientUserID {
+		return nil, ErrUnauthorized
+	}
+
+	msgs, err := s.repo.ListMessages(ctx, consultationID)
+	if err != nil {
+		return nil, err
+	}
+
+	msgResponses := make([]dto.MessageResponse, 0, len(msgs))
+	for _, m := range msgs {
+		msgResponses = append(msgResponses, *s.toMessageResponse(m))
+	}
+
+	return msgResponses, nil
+}
+
+func (s *ConsultationServiceImpl) toMessageResponse(m *model.ConsultationMessage) *dto.MessageResponse {
+	return &dto.MessageResponse{
+		ID:             m.ID.String(),
+		ConsultationID: m.ConsultationID.String(),
+		SenderID:       m.SenderID.String(),
+		SenderName:     m.SenderName,
+		SenderRole:     m.SenderRole,
+		Message:        m.Message,
+		AttachmentURL:  m.AttachmentURL,
+		CreatedAt:      m.CreatedAt.Format(time.RFC3339),
+	}
+}
+
 func (s *ConsultationServiceImpl) toResponse(c *model.Consultation) *dto.ConsultationResponse {
 	var startStr, endStr *string
 	if c.StartedAt != nil {

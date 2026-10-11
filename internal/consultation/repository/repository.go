@@ -17,4 +17,7 @@ type ConsultationRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*model.Consultation, error)
 	GetByAppointmentID(ctx context.Context, aptID uuid.UUID) (*model.Consultation, error)
 	Update(ctx context.Context, cons *model.Consultation) error
+	GetRoomDetails(ctx context.Context, consultationID uuid.UUID) (*model.RoomDetails, error)
+	SaveMessage(ctx context.Context, msg *model.ConsultationMessage) error
+	ListMessages(ctx context.Context, consultationID uuid.UUID) ([]*model.ConsultationMessage, error)
 }

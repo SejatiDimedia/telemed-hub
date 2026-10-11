@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 export interface AvatarProps {
-  src?: string;
+  src?: string | null;
   name: string;
   size?: "sm" | "md" | "lg";
   status?: "online" | "offline" | "away";
@@ -16,22 +16,21 @@ export function Avatar({
   className = "",
 }: AvatarProps) {
   const [imageError, setImageError] = useState(false);
-  
-  console.log("Avatar render:", { name, src, imageError });
+  const cleanSrc = src && typeof src === "string" && src.trim() !== "" ? src.trim() : null;
 
   useEffect(() => {
     setImageError(false);
-  }, [src]);
+  }, [cleanSrc]);
 
-  const finalSrc = src ? (src.includes("?") ? `${src}&_cb=${Date.now()}` : `${src}?_cb=${Date.now()}`) : undefined;
-
-  // Generate initials
-  const initials = name
-    .split(" ")
+  // Generate initials safely
+  const initials = (name || "U")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .map((word) => word[0])
     .join("")
     .substring(0, 2)
-    .toUpperCase();
+    .toUpperCase() || "U";
 
   const sizeClasses = {
     sm: "w-8 h-8 text-label-sm",
@@ -40,8 +39,8 @@ export function Avatar({
   };
 
   const statusClasses = {
-    online: "bg-green-500",
-    offline: "bg-gray-400",
+    online: "bg-emerald-500",
+    offline: "bg-neutral-400",
     away: "bg-amber-500",
   };
 
@@ -52,22 +51,23 @@ export function Avatar({
   };
 
   return (
-    <div className={`relative inline-block ${className}`}>
+    <div className={`relative inline-block shrink-0 ${className}`}>
       <div
         className={`flex items-center justify-center rounded-full overflow-hidden select-none font-bold font-body ${
           sizeClasses[size]
         } ${
-          finalSrc && !imageError
-            ? "bg-transparent"
+          cleanSrc && !imageError
+            ? "bg-surface-container"
             : "bg-primary-container text-on-primary-container border border-primary/20"
         }`}
       >
-        {finalSrc && !imageError ? (
+        {cleanSrc && !imageError ? (
           <img
-            src={finalSrc}
+            src={cleanSrc}
             alt={name}
             onError={() => setImageError(true)}
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         ) : (
           <span>{initials}</span>

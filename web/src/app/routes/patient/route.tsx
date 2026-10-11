@@ -85,7 +85,7 @@ function PatientLayout() {
               </p>
               <p className="text-[11px] font-semibold text-primary">Patient Portal</p>
             </div>
-            <Avatar src={user?.profilePictureUrl} name={displayName} size="md" />
+            <Avatar src={profile?.profile_picture_url ?? user?.profilePictureUrl} name={displayName} size="md" />
           </div>
         </div>
       </header>

@@ -33,19 +33,26 @@ func AuthMiddleware(cfg *config.Config, rdb *redis.Client) func(http.Handler) ht
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tokenString := ""
 			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				httpresponse.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authorization header is required")
-				return
+			if authHeader != "" {
+				parts := strings.Split(authHeader, " ")
+				if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+					tokenString = parts[1]
+				} else {
+					httpresponse.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid authorization header format")
+					return
+				}
 			}
 
-			parts := strings.Split(authHeader, " ")
-			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				httpresponse.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid authorization header format")
-				return
+			if tokenString == "" {
+				tokenString = r.URL.Query().Get("token")
 			}
 
-			tokenString := parts[1]
+			if tokenString == "" {
+				httpresponse.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authorization token is required")
+				return
+			}
 
 			// Parse and validate JWT token
 			token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {

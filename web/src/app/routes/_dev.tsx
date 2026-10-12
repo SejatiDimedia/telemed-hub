@@ -21,7 +21,7 @@ function DevLayout() {
         </div>
       </header>
 
-      <main className="p-gutter max-w-7xl mx-auto">
+      <main className="p-gutter w-full">
         <Outlet />
       </main>
     </div>

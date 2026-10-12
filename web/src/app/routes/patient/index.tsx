@@ -79,7 +79,7 @@ function PatientDashboard() {
   const activePrescriptionsCount = prescriptions?.filter((p) => p.status === "active").length ?? 0;
 
   return (
-    <div className="flex flex-col gap-8 max-w-6xl">
+    <div className="flex flex-col gap-8 w-full">
       {/* Header Section */}
       <section className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>

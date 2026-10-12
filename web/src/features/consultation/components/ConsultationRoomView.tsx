@@ -14,6 +14,7 @@ import { Dialog } from "../../../components/ui/Dialog";
 import { Button } from "../../../components/ui/Button";
 import { Badge } from "../../../components/ui/Badge";
 import { useToastStore } from "../../../stores/toast-store";
+import { ConsultationReviewModal } from "./ConsultationReviewModal";
 import type { ConsultationMessage } from "../types";
 
 export interface ConsultationRoomViewProps {
@@ -33,6 +34,8 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
   const [mobileView, setMobileView] = useState<"video" | "panel">("video");
 
   const [isEndCallDialogOpen, setIsEndCallDialogOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [sessionEndedByDoctor, setSessionEndedByDoctor] = useState(false);
 
   // Fetch consultation room data
   const { data: room, isLoading, isError, error } = useConsultationRoom(consultationId);
@@ -76,12 +79,13 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
     onNewMessage: handleIncomingWSMessage,
     onSessionEnded: () => {
       if (!isDoctor) {
+        setSessionEndedByDoctor(true);
+        setIsReviewModalOpen(true);
         addToast({
           type: "info",
           title: "Sesi Selesai",
-          message: "Dokter telah menyelesaikan sesi konsultasi ini. Anda dialihkan ke halaman janji temu.",
+          message: "Dokter telah menyelesaikan sesi konsultasi ini. Silakan berikan penilaian untuk dokter.",
         });
-        void navigate({ to: "/patient/appointments" });
       }
     },
   });
@@ -240,6 +244,23 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
               Selesaikan Sesi
             </Button>
           )}
+
+          {!isDoctor && room.status === "completed" && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsReviewModalOpen(true)}
+              className="text-xs font-bold h-8 px-3.5 rounded-full flex items-center gap-1.5 shadow-xs"
+            >
+              <span
+                className="material-symbols-outlined text-[16px] text-amber-300"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                star
+              </span>
+              Beri / Cek Ulasan
+            </Button>
+          )}
         </div>
       </header>
 
@@ -375,6 +396,19 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
           </div>
         </div>
       </Dialog>
+
+      {/* Consultation Review & Rating Modal */}
+      <ConsultationReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          if (sessionEndedByDoctor) {
+            void navigate({ to: "/patient/appointments" });
+          }
+        }}
+        consultationId={canonicalConsultationId}
+        doctorName={room?.doctor?.name}
+      />
     </div>
   );
 }

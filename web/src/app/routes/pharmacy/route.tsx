@@ -73,8 +73,8 @@ function PharmacyLayout() {
       </header>
 
       {/* Main Content Pane */}
-      <main className="pl-0 md:pl-[280px] pt-20 min-h-screen flex flex-col justify-between transition-all duration-300">
-        <div className="flex-1 p-4 md:p-gutter">
+      <main className="pl-0 md:pl-[280px] pt-20 min-h-screen flex flex-col justify-between transition-all duration-300 w-full">
+        <div className="flex-1 p-4 md:p-gutter w-full">
           <Outlet />
         </div>
       </main>

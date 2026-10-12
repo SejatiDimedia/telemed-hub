@@ -14,6 +14,7 @@ import { Avatar } from "../../../components/ui/Avatar";
 import { Badge } from "../../../components/ui/Badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/Tabs";
 import { EmptyState } from "../../../components/shared/EmptyState";
+import { DoctorReviewsModal } from "../../../features/doctor/components/DoctorReviewsModal";
 import { useState, useMemo } from "react";
 import type { PrescriptionItem } from "../../../features/prescription/types";
 
@@ -62,6 +63,7 @@ function DoctorDashboard() {
   const [activeConsultationId, setActiveConsultationId] = useState<string | null>(null);
   const [activePatientId, setActivePatientId] = useState<string | null>(null);
   const [isConsultationOpen, setIsConsultationOpen] = useState(false);
+  const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
   const [notes, setNotes] = useState("");
 
   // Prescription Form state
@@ -252,9 +254,9 @@ function DoctorDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* Welcome Banner */}
-      <section className="flex flex-col md:flex-row justify-between items-end gap-6 select-none">
+    <div className="flex flex-col gap-8 w-full">
+      {/* Welcome Banner & Reputation Stat */}
+      <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 select-none">
         <div className="max-w-2xl">
           <h2 className="font-display text-headline-lg text-on-background mb-2">
             Selamat Datang, <span className="text-primary italic font-bold">{doctorProfile?.full_name}</span>
@@ -263,6 +265,40 @@ function DoctorDashboard() {
             Portal Kerja Terpadu. Periksa antrean pasien harian Anda, kelola jadwal praktek, dan luncurkan ruang konsultasi virtual secara instan.
           </p>
         </div>
+
+        {/* Reputation Stat Card */}
+        <button
+          type="button"
+          onClick={() => setIsReviewsModalOpen(true)}
+          className="p-4 rounded-2xl bg-surface-container-low/80 hover:bg-surface-container border border-outline-variant/20 flex items-center gap-4 transition-all text-left shadow-xs group cursor-pointer shrink-0"
+          title="Klik untuk melihat seluruh ulasan dan rating pasien"
+        >
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:scale-105 transition-transform">
+            <span
+              className="material-symbols-outlined text-2xl"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              star
+            </span>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-black text-on-surface">
+                {doctorProfile?.rating && doctorProfile.rating > 0
+                  ? Number(doctorProfile.rating).toFixed(1)
+                  : "0.0"}
+              </span>
+              <span className="text-xs text-on-surface-variant font-medium">/ 5.0</span>
+            </div>
+            <p className="text-xs text-on-surface-variant/80 font-medium">
+              {doctorProfile?.total_reviews ?? 0} Ulasan Pasien
+            </p>
+            <span className="text-[11px] text-primary font-bold inline-flex items-center gap-0.5 mt-0.5 group-hover:underline">
+              Lihat Ulasan
+              <span className="material-symbols-outlined text-xs">arrow_forward</span>
+            </span>
+          </div>
+        </button>
       </section>
 
       {/* Tabs Layout */}
@@ -693,6 +729,16 @@ function DoctorDashboard() {
           </div>
         </div>
       </Drawer>
+
+      {/* Doctor Reviews Modal (view own ratings and patient reviews) */}
+      {doctorProfile?.id && (
+        <DoctorReviewsModal
+          isOpen={isReviewsModalOpen}
+          onClose={() => setIsReviewsModalOpen(false)}
+          doctorId={doctorProfile.id}
+          doctorName={doctorProfile.full_name}
+        />
+      )}
     </div>
   );
 }

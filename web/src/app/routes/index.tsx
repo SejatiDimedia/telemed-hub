@@ -10,7 +10,7 @@ export function HomePage() {
     <div className="min-h-screen bg-background text-on-surface flex flex-col justify-between selection:bg-primary/20 selection:text-primary">
       {/* Top Navbar */}
       <header className="border-b border-outline-variant/30 bg-surface/90 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="w-full px-6 md:px-12 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-200">
               <span className="material-symbols-outlined text-[24px]">medical_services</span>
@@ -41,10 +41,10 @@ export function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 w-full">
         {/* Hero Section */}
-        <section className="max-w-6xl mx-auto px-6 pt-16 pb-20">
-          <div className="max-w-3xl">
+        <section className="w-full px-6 md:px-12 pt-16 pb-20">
+          <div className="max-w-4xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-6">
               <span className="w-2 h-2 rounded-full bg-primary"></span>
               Platform Pelayanan Kesehatan Digital
@@ -121,7 +121,7 @@ export function HomePage() {
           </div>
 
           {/* Quick Demo Credentials Info Card */}
-          <div className="mt-16 p-6 rounded-2xl bg-surface-container-low border border-outline-variant/40 max-w-4xl">
+          <div className="mt-16 p-6 rounded-2xl bg-surface-container-low border border-outline-variant/40 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h4 className="font-bold text-base text-on-surface flex items-center gap-2">
@@ -160,7 +160,7 @@ export function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-outline-variant/30 py-6 bg-surface-container-lowest">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-on-surface-variant">
+        <div className="w-full px-6 md:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-on-surface-variant">
           <p>© {new Date().getFullYear()} TeleMedHub. Modular Monolith Architecture.</p>
           <div className="flex items-center gap-6">
             <Link to="/login" className="hover:text-primary transition-colors">

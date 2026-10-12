@@ -64,7 +64,7 @@ function AISessionChat() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] max-w-4xl mx-auto border border-outline-variant/30 rounded-2xl overflow-hidden bg-surface-container-lowest shadow-level-1">
+    <div className="flex flex-col h-[calc(100vh-8rem)] w-full border border-outline-variant/30 rounded-2xl overflow-hidden bg-surface-container-lowest shadow-level-1">
       {/* Header */}
       <div className="flex items-center gap-4 p-4 border-b border-outline-variant/20 bg-surface">
         <Button

@@ -152,7 +152,7 @@ function PatientOrdersPage() {
   }, [prescriptions]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full">
       {/* Page Header */}
       <section className="flex flex-col md:flex-row justify-between items-end gap-6 select-none">
         <div className="max-w-2xl">

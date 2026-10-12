@@ -4,6 +4,8 @@ import type {
   ConsultationRoom,
   ConsultationMessage,
   SendMessagePayload,
+  CreateReviewPayload,
+  ConsultationReview,
 } from "../types";
 
 export const consultationApi = {
@@ -29,6 +31,14 @@ export const consultationApi = {
 
   complete: (id: string): Promise<Consultation> => {
     return apiClient.post<Consultation>(`/consultations/${id}/complete`, {});
+  },
+
+  getReview: (id: string): Promise<ConsultationReview> => {
+    return apiClient.get<ConsultationReview>(`/consultations/${id}/review`);
+  },
+
+  createReview: (id: string, payload: CreateReviewPayload): Promise<ConsultationReview> => {
+    return apiClient.post<ConsultationReview>(`/consultations/${id}/review`, payload);
   },
 };
 

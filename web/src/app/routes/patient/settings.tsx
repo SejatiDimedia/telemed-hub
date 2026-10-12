@@ -76,7 +76,7 @@ function PatientSettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-2xl mx-auto">
+    <div className="flex flex-col gap-8 w-full">
       {/* Page Header */}
       <section className="flex flex-col gap-2 select-none">
         <h1 className="font-display text-headline-lg text-primary font-bold">Pengaturan Akun & Profil</h1>

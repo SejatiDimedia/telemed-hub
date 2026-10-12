@@ -11,6 +11,8 @@ import { Avatar } from "../../../components/ui/Avatar";
 import { Badge } from "../../../components/ui/Badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/Tabs";
 import { EmptyState } from "../../../components/shared/EmptyState";
+import { DoctorReviewsModal } from "../../../features/doctor/components/DoctorReviewsModal";
+import { ConsultationReviewModal } from "../../../features/consultation/components/ConsultationReviewModal";
 import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,6 +48,14 @@ function PatientAppointmentsPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState("");
+
+  // Doctor Reviews Modal state
+  const [reviewsDoctorId, setReviewsDoctorId] = useState<string | null>(null);
+  const [reviewsDoctorName, setReviewsDoctorName] = useState<string>("");
+
+  // Patient consultation review modal state
+  const [reviewConsultationId, setReviewConsultationId] = useState<string | null>(null);
+  const [reviewDoctorName, setReviewDoctorName] = useState<string>("");
 
   // Search input
   const [searchQuery, setSearchQuery] = useState("");
@@ -291,7 +301,7 @@ function PatientAppointmentsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 w-full">
       {/* Page Header */}
       <section className="flex flex-col md:flex-row justify-between items-end gap-6 select-none">
         <div className="max-w-2xl">
@@ -413,6 +423,41 @@ function PatientAppointmentsPage() {
                             <p className="text-sm text-on-surface-variant/80 font-semibold mt-1">
                               {doc.specialty?.name ?? "Dokter Umum"}
                             </p>
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              {doc.rating !== undefined && doc.rating > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReviewsDoctorId(doc.id);
+                                    setReviewsDoctorName(doc.full_name);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 font-bold text-xs transition-colors cursor-pointer"
+                                  title="Klik untuk melihat ulasan pasien"
+                                >
+                                  <span
+                                    className="material-symbols-outlined text-[15px] text-amber-500"
+                                    style={{ fontVariationSettings: "'FILL' 1" }}
+                                  >
+                                    star
+                                  </span>
+                                  <span>{Number(doc.rating).toFixed(1)}</span>
+                                  <span className="text-on-surface-variant/70 font-medium">
+                                    ({doc.total_reviews ?? 0} ulasan)
+                                  </span>
+                                  <span className="text-[11px] text-primary underline ml-1 font-semibold">
+                                    Lihat
+                                  </span>
+                                </button>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-medium text-xs">
+                                  <span className="material-symbols-outlined text-[14px] text-outline">
+                                    star
+                                  </span>
+                                  <span>Dokter Baru</span>
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-primary font-bold mt-2">
                               Tarif: {formatCurrency(Number(doc.consultation_fee))}
                             </p>
@@ -597,6 +642,25 @@ function PatientAppointmentsPage() {
                                       {apt.status === "completed" ? "visibility" : "videocam"}
                                     </span>
                                     {apt.status === "completed" ? "Lihat Sesi" : "Buka Sesi"}
+                                  </Button>
+                                )}
+                                {apt.status === "completed" && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setReviewConsultationId(apt.id);
+                                      setReviewDoctorName(getDoctorNameForAppointment(apt.doctor_id));
+                                    }}
+                                    className="py-1 px-3 rounded-full text-xs font-bold flex items-center gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 shadow-xs"
+                                  >
+                                    <span
+                                      className="material-symbols-outlined text-[15px] text-amber-500"
+                                      style={{ fontVariationSettings: "'FILL' 1" }}
+                                    >
+                                      star
+                                    </span>
+                                    Ulasan
                                   </Button>
                                 )}
                                 {canCancel && (
@@ -871,6 +935,22 @@ function PatientAppointmentsPage() {
           </div>
         </div>
       </Dialog>
+
+      {/* Doctor Reviews Modal (view doctor's rating and all patient reviews) */}
+      <DoctorReviewsModal
+        isOpen={Boolean(reviewsDoctorId)}
+        onClose={() => setReviewsDoctorId(null)}
+        doctorId={reviewsDoctorId ?? ""}
+        doctorName={reviewsDoctorName}
+      />
+
+      {/* Consultation Review & Rating Modal (for patient to review a completed consultation) */}
+      <ConsultationReviewModal
+        isOpen={Boolean(reviewConsultationId)}
+        onClose={() => setReviewConsultationId(null)}
+        consultationId={reviewConsultationId ?? ""}
+        doctorName={reviewDoctorName}
+      />
     </div>
   );
 }

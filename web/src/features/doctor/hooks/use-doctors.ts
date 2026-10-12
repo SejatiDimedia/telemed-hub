@@ -9,6 +9,7 @@ export const doctorKeys = {
   detail: (id: string) => [...doctorKeys.details(), id] as const,
   me: () => [...doctorKeys.all, "me"] as const,
   availabilities: (id: string) => [...doctorKeys.detail(id), "availability"] as const,
+  reviews: (id: string) => [...doctorKeys.detail(id), "reviews"] as const,
 };
 
 export function useDoctors() {
@@ -40,6 +41,14 @@ export function useDoctorProfileMe() {
     queryKey: doctorKeys.me(),
     queryFn: doctorApi.getMe,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useDoctorReviews(doctorId: string) {
+  return useQuery({
+    queryKey: doctorKeys.reviews(doctorId),
+    queryFn: () => doctorApi.getReviews(doctorId),
+    enabled: Boolean(doctorId),
   });
 }
 

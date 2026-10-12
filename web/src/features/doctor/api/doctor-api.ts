@@ -1,5 +1,5 @@
 import { apiClient } from "../../../lib/api-client";
-import type { DoctorProfile, Availability } from "../types";
+import type { DoctorProfile, Availability, DoctorReviewsResponse } from "../types";
 
 export const doctorApi = {
   list: (): Promise<DoctorProfile[]> => {
@@ -12,6 +12,10 @@ export const doctorApi = {
 
   getMe: (): Promise<DoctorProfile> => {
     return apiClient.get<DoctorProfile>("/doctors/me");
+  },
+
+  getReviews: (doctorId: string): Promise<DoctorReviewsResponse> => {
+    return apiClient.get<DoctorReviewsResponse>(`/doctors/${doctorId}/reviews`);
   },
 
   updateMe: (data: Partial<DoctorProfile>): Promise<DoctorProfile> => {

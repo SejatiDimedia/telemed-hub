@@ -59,3 +59,19 @@ export interface WSSignalingMessage {
   payload: any;
 }
 
+export interface CreateReviewPayload {
+  rating: number;
+  comment: string;
+}
+
+export interface ConsultationReview {
+  id: string;
+  doctor_id: string;
+  patient_id: string;
+  consultation_id: string;
+  patient_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
+

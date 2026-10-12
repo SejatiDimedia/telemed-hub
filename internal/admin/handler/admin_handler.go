@@ -49,6 +49,7 @@ func (h *AdminHandler) Routes() chi.Router {
 		r.Get("/stats", h.GetStats)
 		r.Get("/users", h.ListUsers)
 		r.Get("/users/{id}", h.GetUser)
+		r.Put("/users/{id}", h.UpdateUser)
 		r.Post("/users/{id}/suspend", h.SuspendUser)
 		r.Post("/users/{id}/roles", h.AssignRole)
 		r.Get("/audit-logs", h.ListAuditLogs)
@@ -190,6 +191,61 @@ func (h *AdminHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpresponse.Success(w, user)
+}
+
+func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	adminUserID, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpresponse.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
+		return
+	}
+
+	roles, err := middleware.GetUserRoles(r.Context())
+	if err != nil {
+		httpresponse.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required")
+		return
+	}
+
+	targetIDParam := chi.URLParam(r, "id")
+	targetID, err := uuid.Parse(targetIDParam)
+	if err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "invalid user ID format")
+		return
+	}
+
+	var req dto.UpdateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "invalid request body")
+		return
+	}
+
+	ip := getIP(r)
+	ua := r.Header.Get("User-Agent")
+
+	updatedUser, err := h.svc.UpdateUser(r.Context(), adminUserID, roles, targetID, req, ip, ua)
+	if err != nil {
+		if errors.Is(err, service.ErrUnauthorized) {
+			httpresponse.Error(w, http.StatusForbidden, "FORBIDDEN", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrInvalidFullName) || errors.Is(err, service.ErrInvalidEmail) {
+			httpresponse.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrEmailAlreadyExists) {
+			httpresponse.Error(w, http.StatusConflict, "CONFLICT", "email is already in use by another user")
+			return
+		}
+		if errors.Is(err, repository.ErrUserNotFound) {
+			httpresponse.Error(w, http.StatusNotFound, "NOT_FOUND", "user not found")
+			return
+		}
+		h.logger.Error("failed to update user", "error", err)
+		httpresponse.InternalError(w)
+		return
+	}
+
+	httpresponse.Success(w, updatedUser)
 }
 
 func (h *AdminHandler) SuspendUser(w http.ResponseWriter, r *http.Request) {

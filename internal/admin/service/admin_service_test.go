@@ -44,6 +44,16 @@ func (m *MockAdminRepo) UpdateUserStatus(ctx context.Context, id uuid.UUID, stat
 	return args.Error(0)
 }
 
+func (m *MockAdminRepo) UpdateUser(ctx context.Context, id uuid.UUID, email, fullName string, phoneNumber *string) error {
+	args := m.Called(ctx, id, email, fullName, phoneNumber)
+	return args.Error(0)
+}
+
+func (m *MockAdminRepo) CheckEmailExists(ctx context.Context, email string, excludeUserID uuid.UUID) (bool, error) {
+	args := m.Called(ctx, email, excludeUserID)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockAdminRepo) AssignRole(ctx context.Context, userID uuid.UUID, roleName string) ([]string, error) {
 	args := m.Called(ctx, userID, roleName)
 	if args.Get(0) == nil {
@@ -109,6 +119,40 @@ func TestAdminService_SuccessFlows(t *testing.T) {
 	roleResp, err := svc.AssignRole(context.Background(), actorID, []string{"admin"}, targetID, dto.AssignRoleRequest{Role: "pharmacy_staff"}, "127.0.0.1", "curl")
 	assert.NoError(t, err)
 	assert.Contains(t, roleResp.Roles, "pharmacy_staff")
+
+	// Update User - Success
+	existingUser := &dto.UserResponse{
+		ID:       targetID.String(),
+		Email:    "old@example.com",
+		FullName: "Old Name",
+	}
+	updatedUser := &dto.UserResponse{
+		ID:       targetID.String(),
+		Email:    "new@example.com",
+		FullName: "New Name",
+	}
+	mockRepo.On("GetUserByID", mock.Anything, targetID).Return(existingUser, nil).Once()
+	mockRepo.On("CheckEmailExists", mock.Anything, "new@example.com", targetID).Return(false, nil).Once()
+	mockRepo.On("UpdateUser", mock.Anything, targetID, "new@example.com", "New Name", mock.Anything).Return(nil).Once()
+	mockRepo.On("CreateAuditLog", mock.Anything, actorID, "user.updated", "users", targetID, "127.0.0.1", "curl", mock.Anything).Return(nil).Once()
+	mockRepo.On("GetUserByID", mock.Anything, targetID).Return(updatedUser, nil).Once()
+
+	res, err := svc.UpdateUser(context.Background(), actorID, []string{"admin"}, targetID, dto.UpdateUserRequest{
+		Email:    "new@example.com",
+		FullName: "New Name",
+	}, "127.0.0.1", "curl")
+	assert.NoError(t, err)
+	assert.Equal(t, "new@example.com", res.Email)
+	assert.Equal(t, "New Name", res.FullName)
+
+	// Update User - Duplicate Email Error
+	mockRepo.On("GetUserByID", mock.Anything, targetID).Return(existingUser, nil).Once()
+	mockRepo.On("CheckEmailExists", mock.Anything, "taken@example.com", targetID).Return(true, nil).Once()
+	_, err = svc.UpdateUser(context.Background(), actorID, []string{"admin"}, targetID, dto.UpdateUserRequest{
+		Email:    "taken@example.com",
+		FullName: "Any Name",
+	}, "127.0.0.1", "curl")
+	assert.ErrorIs(t, err, ErrEmailAlreadyExists)
 
 	mockRepo.AssertExpectations(t)
 }

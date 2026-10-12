@@ -278,6 +278,32 @@ func (r *PostgresRepository) UpdateUserStatus(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
+func (r *PostgresRepository) CheckEmailExists(ctx context.Context, email string, excludeUserID uuid.UUID) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = LOWER($1) AND id != $2 AND deleted_at IS NULL)`
+	var exists bool
+	err := r.db.QueryRow(ctx, query, email, excludeUserID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check email existence: %w", err)
+	}
+	return exists, nil
+}
+
+func (r *PostgresRepository) UpdateUser(ctx context.Context, id uuid.UUID, email, fullName string, phoneNumber *string) error {
+	query := `
+		UPDATE users 
+		SET email = $1, full_name = $2, phone_number = $3, updated_at = NOW() 
+		WHERE id = $4 AND deleted_at IS NULL
+	`
+	cmd, err := r.db.Exec(ctx, query, email, fullName, phoneNumber, id)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+	if cmd.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
 func (r *PostgresRepository) AssignRole(ctx context.Context, userID uuid.UUID, roleName string) ([]string, error) {
 	var roleID uuid.UUID
 	err := r.db.QueryRow(ctx, "SELECT id FROM roles WHERE name = $1", roleName).Scan(&roleID)

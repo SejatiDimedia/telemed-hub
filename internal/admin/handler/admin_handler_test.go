@@ -48,6 +48,14 @@ func (m *MockAdminService) GetUserByID(ctx context.Context, actorID uuid.UUID, r
 	return args.Get(0).(*dto.UserResponse), args.Error(1)
 }
 
+func (m *MockAdminService) UpdateUser(ctx context.Context, actorID uuid.UUID, roles []string, targetUserID uuid.UUID, req dto.UpdateUserRequest, ip, ua string) (*dto.UserResponse, error) {
+	args := m.Called(ctx, actorID, roles, targetUserID, req, ip, ua)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.UserResponse), args.Error(1)
+}
+
 func (m *MockAdminService) SuspendUser(ctx context.Context, actorID uuid.UUID, roles []string, targetUserID uuid.UUID, req dto.SuspendUserRequest, ip, ua string) (*dto.UserResponse, error) {
 	args := m.Called(ctx, actorID, roles, targetUserID, req, ip, ua)
 	if args.Get(0) == nil {
@@ -83,6 +91,7 @@ func newTestHandler(svc service.AdminService) (*AdminHandler, chi.Router) {
 	r.Get("/admin/stats", h.GetStats)
 	r.Get("/admin/users", h.ListUsers)
 	r.Get("/admin/users/{id}", h.GetUser)
+	r.Put("/admin/users/{id}", h.UpdateUser)
 	r.Post("/admin/users/{id}/suspend", h.SuspendUser)
 	r.Post("/admin/users/{id}/roles", h.AssignRole)
 	r.Get("/admin/audit-logs", h.ListAuditLogs)
@@ -250,6 +259,38 @@ func TestAdminHandler_SuspendUser_Success(t *testing.T) {
 
 	bodyBytes, _ := json.Marshal(reqBody)
 	req, _ := http.NewRequest(http.MethodPost, "/admin/users/"+targetID.String()+"/suspend", bytes.NewReader(bodyBytes))
+	req = withAuth(req, adminID, []string{"admin"})
+
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	mockSvc.AssertExpectations(t)
+}
+
+func TestAdminHandler_UpdateUser_Success(t *testing.T) {
+	mockSvc := new(MockAdminService)
+	_, r := newTestHandler(mockSvc)
+
+	adminID := uuid.New()
+	targetID := uuid.New()
+	reqBody := dto.UpdateUserRequest{
+		Email:    "updated@example.com",
+		FullName: "Updated Name",
+	}
+
+	expectedResp := &dto.UserResponse{
+		ID:       targetID.String(),
+		Email:    "updated@example.com",
+		FullName: "Updated Name",
+		Status:   "active",
+	}
+
+	mockSvc.On("UpdateUser", mock.Anything, adminID, []string{"admin"}, targetID, reqBody, mock.Anything, mock.Anything).
+		Return(expectedResp, nil).Once()
+
+	bodyBytes, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest(http.MethodPut, "/admin/users/"+targetID.String(), bytes.NewReader(bodyBytes))
 	req = withAuth(req, adminID, []string{"admin"})
 
 	rec := httptest.NewRecorder()

@@ -8,6 +8,7 @@ import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Input } from "../../../components/ui/Input";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 
 export const Route = createFileRoute("/admin/doctors")({
   component: AdminDoctorsPage,
@@ -29,6 +30,16 @@ function AdminDoctorsPage() {
   const [newPassword, setNewPassword] = useState("Rahasia123!");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // State Konfirmasi Pengesahan Dokter
+  const [confirmVerifyDoctor, setConfirmVerifyDoctor] = useState<any | null>(null);
+
+  const handleConfirmVerify = () => {
+    if (!confirmVerifyDoctor) return;
+    verifyDoctorMutation.mutate(confirmVerifyDoctor.id, {
+      onSettled: () => setConfirmVerifyDoctor(null),
+    });
+  };
 
   const filteredDoctors = doctors.filter((doc) => {
     if (filterStatus === "pending" && doc.is_credential_verified) return false;
@@ -272,8 +283,7 @@ function AdminDoctorsPage() {
                           <Button
                             variant="primary"
                             size="sm"
-                            isLoading={verifyDoctorMutation.isPending}
-                            onClick={() => verifyDoctorMutation.mutate(doc.id)}
+                            onClick={() => setConfirmVerifyDoctor(doc)}
                             className="rounded-xl font-bold"
                           >
                             Sahkan Izin Praktik
@@ -387,6 +397,27 @@ function AdminDoctorsPage() {
           </div>
         </div>
       )}
+
+      {/* Dialog Konfirmasi Pengesahan Izin Praktik Dokter */}
+      <ConfirmDialog
+        isOpen={!!confirmVerifyDoctor}
+        onClose={() => setConfirmVerifyDoctor(null)}
+        onConfirm={handleConfirmVerify}
+        isLoading={verifyDoctorMutation.isPending}
+        variant="primary"
+        icon="verified"
+        title="Konfirmasi Pengesahan Izin Praktik"
+        description={
+          <span>
+            Apakah Anda yakin ingin mengesahkan izin praktik{" "}
+            <strong>{confirmVerifyDoctor?.full_name}</strong> (
+            {confirmVerifyDoctor?.specialty?.name || "Dokter Umum"})?
+            Dokter akan langsung berstatus <strong>Aktif Berpraktik</strong> dan dapat ditemukan oleh pasien untuk sesi konsultasi medis.
+          </span>
+        }
+        confirmText="Ya, Sahkan Izin Praktik"
+        cancelText="Batal"
+      />
     </div>
   );
 }

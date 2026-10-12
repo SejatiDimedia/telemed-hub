@@ -46,6 +46,12 @@ type SuspendUserRequest struct {
 	Reason string `json:"reason,omitempty"`
 }
 
+type UpdateUserRequest struct {
+	Email       string  `json:"email"`
+	FullName    string  `json:"full_name"`
+	PhoneNumber *string `json:"phone_number,omitempty"`
+}
+
 type AssignRoleRequest struct {
 	Role string `json:"role"` // "pharmacy_staff" or "admin"
 }

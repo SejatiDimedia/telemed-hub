@@ -26,6 +26,10 @@ export const adminApi = {
     return apiClient.post<AdminUser>(`/admin/users/${id}/suspend`, { status, reason });
   },
 
+  updateUser: (id: string, payload: { email: string; full_name: string; phone_number?: string }): Promise<AdminUser> => {
+    return apiClient.put<AdminUser>(`/admin/users/${id}`, payload);
+  },
+
   assignRole: (id: string, role: string): Promise<{ user_id: string; roles: string[] }> => {
     return apiClient.post<{ user_id: string; roles: string[] }>(`/admin/users/${id}/roles`, { role });
   },

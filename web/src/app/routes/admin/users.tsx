@@ -4,12 +4,14 @@ import {
   useAdminUsers,
   useSuspendUserMutation,
   useAssignRoleMutation,
+  useUpdateUserMutation,
 } from "../../../features/admin/hooks/use-admin";
 import { formatRoleLabel } from "../../../features/admin/types";
 import type { AdminUser } from "../../../features/admin/types";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Avatar } from "../../../components/ui/Avatar";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 
 export const Route = createFileRoute("/admin/users")({
   component: AdminUsersPage,
@@ -22,6 +24,19 @@ function AdminUsersPage() {
   const [assignRoleModalUser, setAssignRoleModalUser] = useState<AdminUser | null>(null);
   const [selectedRoleToAssign, setSelectedRoleToAssign] = useState("pharmacy_staff");
 
+  // State Modal Edit Data Pengguna
+  const [editUserModal, setEditUserModal] = useState<AdminUser | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhoneNumber, setEditPhoneNumber] = useState("");
+  const [editError, setEditError] = useState("");
+
+  // State Konfirmasi Status Pengguna (Suspend / Activate)
+  const [confirmSuspendUser, setConfirmSuspendUser] = useState<{
+    user: AdminUser;
+    newStatus: "suspended" | "active";
+  } | null>(null);
+
   const { data: users = [], isLoading } = useAdminUsers({
     search: searchQuery || undefined,
     role: roleFilter || undefined,
@@ -31,15 +46,64 @@ function AdminUsersPage() {
 
   const suspendUserMutation = useSuspendUserMutation();
   const assignRoleMutation = useAssignRoleMutation();
+  const updateUserMutation = useUpdateUserMutation();
+
+  const handleOpenEdit = (user: AdminUser) => {
+    setEditUserModal(user);
+    setEditFullName(user.full_name);
+    setEditEmail(user.email);
+    setEditPhoneNumber(user.phone_number || "");
+    setEditError("");
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError("");
+    if (!editFullName.trim()) {
+      setEditError("Nama lengkap wajib diisi.");
+      return;
+    }
+    if (!editEmail.trim() || !editEmail.includes("@")) {
+      setEditError("Format alamat email tidak valid.");
+      return;
+    }
+    if (!editUserModal) return;
+
+    try {
+      await updateUserMutation.mutateAsync({
+        userId: editUserModal.id,
+        payload: {
+          full_name: editFullName.trim(),
+          email: editEmail.trim().toLowerCase(),
+          phone_number: editPhoneNumber.trim() || undefined,
+        },
+      });
+      setEditUserModal(null);
+    } catch (err: any) {
+      setEditError(err?.message || "Gagal memperbarui data pengguna. Pastikan email belum digunakan.");
+    }
+  };
 
   const handleToggleSuspend = (user: AdminUser) => {
     const isCurrentlySuspended = user.status === "suspended";
     const newStatus = isCurrentlySuspended ? "active" : "suspended";
+    setConfirmSuspendUser({ user, newStatus });
+  };
+
+  const handleExecuteSuspend = () => {
+    if (!confirmSuspendUser) return;
+    const { user, newStatus } = confirmSuspendUser;
     const reason =
       newStatus === "suspended"
         ? "Penangguhan administratif oleh Super Admin"
         : "Pengaktifan kembali akun oleh Super Admin";
-    suspendUserMutation.mutate({ userId: user.id, status: newStatus, reason });
+
+    suspendUserMutation.mutate(
+      { userId: user.id, status: newStatus, reason },
+      {
+        onSettled: () => setConfirmSuspendUser(null),
+      }
+    );
   };
 
   const handleConfirmAssignRole = () => {
@@ -206,6 +270,15 @@ function AdminUsersPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleOpenEdit(u)}
+                          className="rounded-xl text-xs py-1"
+                        >
+                          <span className="material-symbols-outlined text-[14px] mr-1">edit</span>
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setAssignRoleModalUser(u)}
                           className="rounded-xl text-xs py-1"
                         >
@@ -293,6 +366,147 @@ function AdminUsersPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Edit Informasi Pengguna */}
+      {editUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl border border-outline-variant/40 space-y-4">
+            <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+              <div className="flex items-center gap-2 text-primary font-bold">
+                <span className="material-symbols-outlined text-[22px]">manage_accounts</span>
+                <h3 className="font-display text-lg text-on-surface">
+                  Edit Informasi Pengguna
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditUserModal(null)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {editError && (
+              <div className="p-3 rounded-xl bg-error/10 border border-error/20 text-error text-xs font-semibold flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">error</span>
+                <span>{editError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-on-surface-variant mb-1">
+                  Nama Lengkap
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  placeholder="Nama lengkap pengguna"
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-on-surface-variant mb-1">
+                  Alamat Email Akun
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="nama@email.com"
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <p className="text-[11px] text-on-surface-variant/80 mt-1">
+                  Email ini digunakan pengguna untuk masuk ke sistem.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-on-surface-variant mb-1">
+                  Nomor Telepon (Opsional)
+                </label>
+                <input
+                  type="tel"
+                  value={editPhoneNumber}
+                  onChange={(e) => setEditPhoneNumber(e.target.value)}
+                  placeholder="+628123456789"
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-[11px] text-on-surface-variant flex items-start gap-2">
+                <span className="material-symbols-outlined text-primary text-[16px] shrink-0 mt-0.5">verified_user</span>
+                <span>
+                  Perubahan email akan langsung memperbarui kredensial masuk akun dan otomatis dicatat ke dalam <strong>Catatan Keamanan Layanan</strong>.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/20">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditUserModal(null)}
+                  className="rounded-xl text-xs py-1.5"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  isLoading={updateUserMutation.isPending}
+                  className="rounded-xl text-xs py-1.5 font-bold px-4"
+                >
+                  Simpan Perubahan
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog Konfirmasi Tangguhkan / Aktifkan Akun */}
+      <ConfirmDialog
+        isOpen={!!confirmSuspendUser}
+        onClose={() => setConfirmSuspendUser(null)}
+        onConfirm={handleExecuteSuspend}
+        isLoading={suspendUserMutation.isPending}
+        variant={confirmSuspendUser?.newStatus === "suspended" ? "danger" : "primary"}
+        title={
+          confirmSuspendUser?.newStatus === "suspended"
+            ? "Konfirmasi Penangguhan Akun"
+            : "Konfirmasi Pengaktifan Akun"
+        }
+        description={
+          confirmSuspendUser?.newStatus === "suspended" ? (
+            <span>
+              Apakah Anda yakin ingin menangguhkan akun pengguna{" "}
+              <strong>{confirmSuspendUser.user.full_name}</strong> (
+              <span className="font-mono text-xs">{confirmSuspendUser.user.email}</span>)?
+              Pengguna tidak akan dapat masuk ke sistem sampai akun diaktifkan kembali.
+            </span>
+          ) : (
+            <span>
+              Apakah Anda yakin ingin mengaktifkan kembali akun pengguna{" "}
+              <strong>{confirmSuspendUser?.user.full_name}</strong> (
+              <span className="font-mono text-xs">{confirmSuspendUser?.user.email}</span>)?
+              Pengguna akan dapat kembali mengakses layanan TeleMedHub seperti semula.
+            </span>
+          )
+        }
+        confirmText={
+          confirmSuspendUser?.newStatus === "suspended"
+            ? "Ya, Tangguhkan Akun"
+            : "Ya, Aktifkan Akun"
+        }
+        cancelText="Batal"
+      />
     </div>
   );
 }

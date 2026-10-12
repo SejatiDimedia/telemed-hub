@@ -92,6 +92,34 @@ export function useSuspendUserMutation() {
   });
 }
 
+export function useUpdateUserMutation() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
+
+  return useMutation({
+    mutationFn: ({ userId, payload }: { userId: string; payload: { email: string; full_name: string; phone_number?: string } }) =>
+      adminApi.updateUser(userId, payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.all });
+      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.doctors() });
+      queryClient.invalidateQueries({ queryKey: ["doctors"] });
+      addToast({
+        title: "Data Pengguna Diperbarui",
+        message: `Informasi akun ${data.full_name} (${data.email}) berhasil disimpan.`,
+        type: "success",
+      });
+    },
+    onError: (err: any) => {
+      addToast({
+        title: "Gagal Memperbarui Pengguna",
+        message: err?.message || "Terjadi kesalahan saat memperbarui akun pengguna.",
+        type: "error",
+      });
+    },
+  });
+}
+
 export function useAssignRoleMutation() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();

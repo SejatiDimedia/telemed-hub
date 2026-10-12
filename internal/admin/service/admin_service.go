@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"net/mail"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,15 +14,19 @@ import (
 )
 
 var (
-	ErrUnauthorized     = errors.New("unauthorized: only admins can perform this action")
-	ErrInvalidRole      = errors.New("invalid role: only pharmacy_staff or admin can be assigned")
-	ErrSelfModification = errors.New("cannot suspend own admin account")
+	ErrUnauthorized       = errors.New("unauthorized: only admins can perform this action")
+	ErrInvalidRole        = errors.New("invalid role: only pharmacy_staff or admin can be assigned")
+	ErrSelfModification   = errors.New("cannot suspend own admin account")
+	ErrEmailAlreadyExists = errors.New("email already registered by another user")
+	ErrInvalidEmail       = errors.New("invalid email address format")
+	ErrInvalidFullName    = errors.New("full name must not be empty")
 )
 
 type AdminService interface {
 	ListAuditLogs(ctx context.Context, actorID uuid.UUID, roles []string, filter dto.ListAuditLogsFilter) ([]*dto.AuditLogResponse, int, error)
 	ListUsers(ctx context.Context, actorID uuid.UUID, roles []string, filter dto.ListUsersFilter) ([]*dto.UserResponse, int, error)
 	GetUserByID(ctx context.Context, actorID uuid.UUID, roles []string, targetUserID uuid.UUID) (*dto.UserResponse, error)
+	UpdateUser(ctx context.Context, actorID uuid.UUID, roles []string, targetUserID uuid.UUID, req dto.UpdateUserRequest, ip, ua string) (*dto.UserResponse, error)
 	SuspendUser(ctx context.Context, actorID uuid.UUID, roles []string, targetUserID uuid.UUID, req dto.SuspendUserRequest, ip, ua string) (*dto.UserResponse, error)
 	AssignRole(ctx context.Context, actorID uuid.UUID, roles []string, targetUserID uuid.UUID, req dto.AssignRoleRequest, ip, ua string) (*dto.AssignRoleResponse, error)
 	GetAdminStats(ctx context.Context, actorID uuid.UUID, roles []string) (*dto.AdminStatsResponse, error)
@@ -71,6 +77,59 @@ func (s *AdminServiceImpl) GetUserByID(ctx context.Context, actorID uuid.UUID, r
 	if !hasAdminRole(roles) {
 		return nil, ErrUnauthorized
 	}
+	return s.repo.GetUserByID(ctx, targetUserID)
+}
+
+func (s *AdminServiceImpl) UpdateUser(ctx context.Context, actorID uuid.UUID, roles []string, targetUserID uuid.UUID, req dto.UpdateUserRequest, ip, ua string) (*dto.UserResponse, error) {
+	if !hasAdminRole(roles) {
+		return nil, ErrUnauthorized
+	}
+
+	fullName := strings.TrimSpace(req.FullName)
+	if len(fullName) < 2 {
+		return nil, ErrInvalidFullName
+	}
+
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	if _, err := mail.ParseAddress(email); err != nil || !strings.Contains(email, "@") {
+		return nil, ErrInvalidEmail
+	}
+
+	existingUser, err := s.repo.GetUserByID(ctx, targetUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If email changed, check for conflict
+	if !strings.EqualFold(existingUser.Email, email) {
+		exists, err := s.repo.CheckEmailExists(ctx, email, targetUserID)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, ErrEmailAlreadyExists
+		}
+	}
+
+	var phonePtr *string
+	if req.PhoneNumber != nil {
+		trimmedPhone := strings.TrimSpace(*req.PhoneNumber)
+		if trimmedPhone != "" {
+			phonePtr = &trimmedPhone
+		}
+	}
+
+	if err := s.repo.UpdateUser(ctx, targetUserID, email, fullName, phonePtr); err != nil {
+		return nil, err
+	}
+
+	_ = s.repo.CreateAuditLog(ctx, actorID, "user.updated", "users", targetUserID, ip, ua, map[string]any{
+		"old_email":     existingUser.Email,
+		"new_email":     email,
+		"old_full_name": existingUser.FullName,
+		"new_full_name": fullName,
+	})
+
 	return s.repo.GetUserByID(ctx, targetUserID)
 }
 

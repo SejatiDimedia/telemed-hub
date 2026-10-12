@@ -53,6 +53,7 @@ export interface ListAuditLogsParams {
 export function formatAuditAction(action: string): string {
   const map: Record<string, string> = {
     "doctor.verified": "Verifikasi Dokter",
+    "user.updated": "Pembaruan Data Pengguna",
     "user.suspended": "Penangguhan Akun",
     "user.role_assigned": "Pembaruan Peran",
     "medical_record.read": "Akses Rekam Medis",

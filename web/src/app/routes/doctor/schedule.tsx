@@ -4,6 +4,7 @@ import type { Availability } from "../../../features/doctor/types";
 import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
 import { EmptyState } from "../../../components/shared/EmptyState";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { useState, useMemo } from "react";
 
 export const Route = createFileRoute("/doctor/schedule")({
@@ -37,6 +38,7 @@ function DoctorSchedulePage() {
   const [targetDate, setTargetDate] = useState("");
 
   const [formError, setFormError] = useState("");
+  const [slotToDelete, setSlotToDelete] = useState<string | null>(null);
 
   // Group availability by date
   const groupedAvailability = useMemo(() => {
@@ -227,10 +229,15 @@ function DoctorSchedulePage() {
     }
   };
 
-  const handleDeleteSlot = async (slotId: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus slot ketersediaan ini?")) return;
+  const handleDeleteSlot = (slotId: string) => {
+    setSlotToDelete(slotId);
+  };
+
+  const handleConfirmDeleteSlot = async () => {
+    if (!slotToDelete) return;
     try {
-      await deleteAvailability(slotId);
+      await deleteAvailability(slotToDelete);
+      setSlotToDelete(null);
     } catch {
       // Handled
     }
@@ -580,6 +587,20 @@ function DoctorSchedulePage() {
           </Card>
         </div>
       </div>
+
+      {/* Dialog Konfirmasi Hapus Slot Jadwal */}
+      <ConfirmDialog
+        isOpen={!!slotToDelete}
+        onClose={() => setSlotToDelete(null)}
+        onConfirm={handleConfirmDeleteSlot}
+        isLoading={isDeleting}
+        variant="danger"
+        icon="delete"
+        title="Hapus Slot Ketersediaan"
+        description="Apakah Anda yakin ingin menghapus slot waktu ketersediaan jadwal ini? Slot yang dihapus tidak akan dapat dipilih kembali oleh pasien."
+        confirmText="Ya, Hapus Slot"
+        cancelText="Batal"
+      />
     </div>
   );
 }

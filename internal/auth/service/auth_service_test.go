@@ -79,6 +79,11 @@ func (m *MockAuthRepository) GetActiveRefreshTokens(ctx context.Context, userID 
 	return args.Get(0).([]*model.RefreshToken), args.Error(1)
 }
 
+func (m *MockAuthRepository) UpdateProfilePictureURL(ctx context.Context, userID uuid.UUID, url string) error {
+	args := m.Called(ctx, userID, url)
+	return args.Error(0)
+}
+
 func TestAuthService_Register(t *testing.T) {
 	mockRepo := new(MockAuthRepository)
 	logger := slogNew()

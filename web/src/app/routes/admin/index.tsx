@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useAdminStats,
@@ -9,6 +10,7 @@ import { formatAuditAction, formatTargetType } from "../../../features/admin/typ
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { Avatar } from "../../../components/ui/Avatar";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminOverviewDashboard,
@@ -22,6 +24,14 @@ function AdminOverviewDashboard() {
   });
 
   const verifyDoctorMutation = useVerifyDoctorMutation();
+  const [confirmVerifyDoctor, setConfirmVerifyDoctor] = useState<any | null>(null);
+
+  const handleConfirmVerify = () => {
+    if (!confirmVerifyDoctor) return;
+    verifyDoctorMutation.mutate(confirmVerifyDoctor.id, {
+      onSettled: () => setConfirmVerifyDoctor(null),
+    });
+  };
 
   const pendingDoctors = doctors.filter((d) => !d.is_credential_verified);
 
@@ -198,8 +208,7 @@ function AdminOverviewDashboard() {
                     <Button
                       variant="primary"
                       size="sm"
-                      isLoading={verifyDoctorMutation.isPending}
-                      onClick={() => verifyDoctorMutation.mutate(doc.id)}
+                      onClick={() => setConfirmVerifyDoctor(doc)}
                       className="rounded-xl text-xs py-1"
                     >
                       Verifikasi
@@ -286,6 +295,27 @@ function AdminOverviewDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Dialog Konfirmasi Verifikasi Dokter */}
+      <ConfirmDialog
+        isOpen={!!confirmVerifyDoctor}
+        onClose={() => setConfirmVerifyDoctor(null)}
+        onConfirm={handleConfirmVerify}
+        isLoading={verifyDoctorMutation.isPending}
+        variant="primary"
+        icon="verified"
+        title="Konfirmasi Verifikasi Izin Dokter"
+        description={
+          <span>
+            Apakah Anda yakin ingin mengesahkan izin praktik{" "}
+            <strong>{confirmVerifyDoctor?.full_name}</strong> (
+            {confirmVerifyDoctor?.specialty?.name || "Dokter Umum"})?
+            Dokter akan langsung berstatus <strong>Aktif Berpraktik</strong> dan dapat dipilih oleh pasien untuk jadwal konsultasi.
+          </span>
+        }
+        confirmText="Ya, Verifikasi Dokter"
+        cancelText="Batal"
+      />
     </div>
   );
 }

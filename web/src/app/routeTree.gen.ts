@@ -28,6 +28,9 @@ import { Route as PatientOrdersRouteImport } from './routes/patient/orders'
 import { Route as PatientAppointmentsRouteImport } from './routes/patient/appointments'
 import { Route as DoctorSettingsRouteImport } from './routes/doctor/settings'
 import { Route as DoctorScheduleRouteImport } from './routes/doctor/schedule'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminDoctorsRouteImport } from './routes/admin/doctors'
+import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as DevComponentsRouteImport } from './routes/_dev/components'
 import { Route as PatientAiTriageIndexRouteImport } from './routes/patient/ai-triage/index'
 import { Route as PatientConsultationConsultationIdRouteImport } from './routes/patient/consultation/$consultationId'
@@ -128,6 +131,21 @@ const DoctorScheduleRoute = DoctorScheduleRouteImport.update({
   path: '/schedule',
   getParentRoute: () => DoctorRouteRoute,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminDoctorsRoute = AdminDoctorsRouteImport.update({
+  id: '/doctors',
+  path: '/doctors',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const DevComponentsRoute = DevComponentsRouteImport.update({
   id: '/components',
   path: '/components',
@@ -166,6 +184,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/components': typeof DevComponentsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/doctor/schedule': typeof DoctorScheduleRoute
   '/doctor/settings': typeof DoctorSettingsRoute
   '/patient/appointments': typeof PatientAppointmentsRoute
@@ -187,6 +208,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/components': typeof DevComponentsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/doctor/schedule': typeof DoctorScheduleRoute
   '/doctor/settings': typeof DoctorSettingsRoute
   '/patient/appointments': typeof PatientAppointmentsRoute
@@ -214,6 +238,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_dev/components': typeof DevComponentsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/doctor/schedule': typeof DoctorScheduleRoute
   '/doctor/settings': typeof DoctorSettingsRoute
   '/patient/appointments': typeof PatientAppointmentsRoute
@@ -241,6 +268,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/components'
+    | '/admin/audit'
+    | '/admin/doctors'
+    | '/admin/users'
     | '/doctor/schedule'
     | '/doctor/settings'
     | '/patient/appointments'
@@ -262,6 +292,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/components'
+    | '/admin/audit'
+    | '/admin/doctors'
+    | '/admin/users'
     | '/doctor/schedule'
     | '/doctor/settings'
     | '/patient/appointments'
@@ -288,6 +321,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/_dev/components'
+    | '/admin/audit'
+    | '/admin/doctors'
+    | '/admin/users'
     | '/doctor/schedule'
     | '/doctor/settings'
     | '/patient/appointments'
@@ -451,6 +487,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DoctorScheduleRouteImport
       parentRoute: typeof DoctorRouteRoute
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/doctors': {
+      id: '/admin/doctors'
+      path: '/doctors'
+      fullPath: '/admin/doctors'
+      preLoaderRoute: typeof AdminDoctorsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/_dev/components': {
       id: '/_dev/components'
       path: '/components'
@@ -490,10 +547,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteRouteChildren {
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminDoctorsRoute: typeof AdminDoctorsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAuditRoute: AdminAuditRoute,
+  AdminDoctorsRoute: AdminDoctorsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

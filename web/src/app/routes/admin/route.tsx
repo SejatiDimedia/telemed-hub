@@ -17,10 +17,10 @@ export const Route = createFileRoute("/admin")({
 });
 
 const adminNavItems = [
-  { label: "Dashboard Overview", icon: "dashboard", to: "/admin" },
-  { label: "Verifikasi Dokter", icon: "verified_user", to: "/admin" },
-  { label: "Manajemen Pengguna", icon: "manage_accounts", to: "/admin" },
-  { label: "Audit Log & Security", icon: "shield", to: "/admin" },
+  { label: "Dashboard", icon: "dashboard", to: "/admin" },
+  { label: "Verifikasi Dokter", icon: "verified_user", to: "/admin/doctors" },
+  { label: "Manajemen Pengguna", icon: "manage_accounts", to: "/admin/users" },
+  { label: "Audit & Keamanan", icon: "shield", to: "/admin/audit" },
 ];
 
 function AdminLayout() {

@@ -29,7 +29,7 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<"patient" | "doctor" | "">("patient");
+  const role = "patient" as const;
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -171,11 +171,15 @@ function RegisterPage() {
             </div>
 
             <div className="mb-8">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3">
+                <span className="material-symbols-outlined text-[16px]">person_add</span>
+                Portal Pendaftaran Pasien
+              </div>
               <h1 className="font-display text-2xl font-bold text-on-surface tracking-tight mb-2">
-                Registrasi Akun Baru
+                Registrasi Akun Pasien
               </h1>
               <p className="text-body-sm text-on-surface-variant">
-                Lengkapi formulir berikut untuk membuat akun TeleMedHub Anda.
+                Lengkapi formulir berikut untuk membuat akun pasien dan menjadwalkan konsultasi dokter secara instan.
               </p>
             </div>
 
@@ -215,43 +219,6 @@ function RegisterPage() {
                     className="rounded-xl py-3"
                   />
 
-                  {/* Role Selection */}
-                  <div className="flex flex-col gap-1.5 w-full">
-                    <label className="text-xs font-semibold text-on-surface">
-                      Tipe Akun Pendaftaran
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setRole("patient")}
-                        className={`py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${
-                          role === "patient"
-                            ? "bg-primary/10 border-primary text-primary"
-                            : "bg-surface border-outline-variant/50 text-on-surface hover:bg-surface-container"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[18px]">personal_injury</span>
-                        Pasien
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRole("doctor")}
-                        className={`py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${
-                          role === "doctor"
-                            ? "bg-primary/10 border-primary text-primary"
-                            : "bg-surface border-outline-variant/50 text-on-surface hover:bg-surface-container"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[18px]">stethoscope</span>
-                        Dokter
-                      </button>
-                    </div>
-                    {validationErrors.role && (
-                      <p className="text-xs text-error font-medium mt-1">
-                        {validationErrors.role}
-                      </p>
-                    )}
-                  </div>
 
                   <Input
                     label="Kata Sandi"
@@ -289,6 +256,19 @@ function RegisterPage() {
                 </form>
               </CardContent>
             </Card>
+
+            {/* Info Callout for Doctors */}
+            <div className="mt-5 p-4 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs text-on-surface-variant flex items-start gap-3 shadow-2xs">
+              <span className="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">
+                medical_services
+              </span>
+              <div>
+                <p className="font-bold text-on-surface">Pendaftaran Dokter & Praktisi Medis</p>
+                <p className="text-[11px] text-on-surface-variant mt-0.5 leading-relaxed">
+                  Pendaftaran akun dokter dan staf faskes dikelola secara resmi oleh Administrator Sistem. Silakan hubungi administrator fasilitas kesehatan untuk aktivasi akun praktik Anda.
+                </p>
+              </div>
+            </div>
 
             <div className="mt-6 text-center text-xs text-on-surface-variant">
               Sudah memiliki akun?{" "}

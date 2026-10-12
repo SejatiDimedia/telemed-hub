@@ -40,7 +40,7 @@ Platform operator responsible for verifying doctor credentials, resolving disput
 ## 4. Functional Requirements
 
 ### 4.1 Identity & Access
-- FR-1: Users can register/login as Patient or Doctor (self-service). Privileged roles (`pharmacy_staff`, `admin`) are assigned by an existing Admin via API.
+- FR-1: Public self-service registration is strictly for Patients (`/register`). Doctor accounts are provisioned and onboarded centrally by Platform Admins via the Admin Control Center (`/admin/doctors`) or direct API. Privileged roles (`pharmacy_staff`, `admin`) are assigned by an existing Admin via API or Admin Control Center (`/admin/users`).
 - FR-2: JWT-based authentication with refresh tokens (access token TTL: 15 minutes; refresh token TTL: 30 days).
 - FR-3: Role-based access control (RBAC) for all protected endpoints.
 - FR-4: Doctors require admin verification (`is_credential_verified = true`) before being publicly bookable.

@@ -103,13 +103,13 @@ function AdminDoctorsPage() {
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-2">
             <span className="material-symbols-outlined text-[16px]">verified</span>
-            Verifikasi SIP/STR Dokter
+            Izin Praktik Dokter
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight">
-            Verifikasi Kredensial Praktisi Medis
+            Verifikasi & Pengesahan Dokter
           </h1>
           <p className="text-body-sm text-on-surface-variant mt-1">
-            Validasi izin praktik dokter sebelum dapat menerima jadwal konsultasi virtual dari pasien.
+            Validasi legalitas dokter sebelum dapat membuka jadwal konsultasi untuk pasien.
           </p>
         </div>
 
@@ -138,9 +138,9 @@ function AdminDoctorsPage() {
         <div className="flex items-start gap-3">
           <span className="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">info</span>
           <div>
-            <span className="font-bold text-on-surface">Alur Penambahan Dokter di TeleMedHub:</span>
+            <span className="font-bold text-on-surface">Pendaftaran Praktisi Medis:</span>
             <span className="ml-1">
-              Dokter dapat mendaftar mandiri via halaman registrasi publik <strong>(/register)</strong> dengan memilih opsi <em>Dokter</em>, atau ditambahkan langsung oleh Admin melalui tombol <strong>+ Tambah Dokter Baru</strong> di atas. Dokter baru akan masuk dengan status <em>Menunggu Verifikasi</em> hingga Admin memvalidasi izin SIP/STR.
+              Pendaftaran akun dokter dilakukan secara resmi oleh Administrator melalui tombol <strong>+ Tambah Dokter Baru</strong> di atas. Setiap dokter baru akan memiliki status <em>Menunggu Verifikasi</em> hingga izin praktiknya disahkan.
             </span>
           </div>
         </div>
@@ -155,7 +155,7 @@ function AdminDoctorsPage() {
             </span>
             <input
               type="text"
-              placeholder="Cari nama dokter, nomor STR/SIP, atau spesialisasi..."
+              placeholder="Cari nama dokter, nomor izin praktik, atau spesialisasi..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl py-2 pl-10 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
@@ -211,11 +211,11 @@ function AdminDoctorsPage() {
               <thead>
                 <tr className="bg-surface-container-low/60 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider border-b border-outline-variant/20">
                   <th className="py-3.5 px-6">Nama & Spesialisasi</th>
-                  <th className="py-3.5 px-6">Nomor STR/SIP</th>
+                  <th className="py-3.5 px-6">No. Izin Praktik</th>
                   <th className="py-3.5 px-6">Tarif Konsultasi</th>
                   <th className="py-3.5 px-6">Rating & Ulasan</th>
-                  <th className="py-3.5 px-6">Status Kredensial</th>
-                  <th className="py-3.5 px-6 text-right">Aksi Verifikasi</th>
+                  <th className="py-3.5 px-6">Status Izin Praktik</th>
+                  <th className="py-3.5 px-6 text-right">Tindakan</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/15 text-body-sm">
@@ -235,7 +235,7 @@ function AdminDoctorsPage() {
                         </div>
                       </td>
                       <td className="py-4 px-6 font-mono text-xs text-on-surface">
-                        {doc.license_number || "SIP-PENDING"}
+                        {doc.license_number || "Belum dilampirkan"}
                       </td>
                       <td className="py-4 px-6 text-on-surface font-semibold">
                         Rp {doc.consultation_fee?.toLocaleString("id-ID") ?? "0"}
@@ -253,7 +253,7 @@ function AdminDoctorsPage() {
                         {isVerified ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700">
                             <span className="material-symbols-outlined text-[15px]">verified</span>
-                            Terverifikasi
+                            Aktif Berpraktik
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-800">
@@ -264,8 +264,9 @@ function AdminDoctorsPage() {
                       </td>
                       <td className="py-4 px-6 text-right">
                         {isVerified ? (
-                          <span className="text-xs text-on-surface-variant font-medium">
-                            Kredensial Sah
+                          <span className="text-xs text-emerald-700 font-semibold inline-flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[15px]">check</span>
+                            Sudah Disahkan
                           </span>
                         ) : (
                           <Button
@@ -275,7 +276,7 @@ function AdminDoctorsPage() {
                             onClick={() => verifyDoctorMutation.mutate(doc.id)}
                             className="rounded-xl font-bold"
                           >
-                            Verifikasi Sekarang
+                            Sahkan Izin Praktik
                           </Button>
                         )}
                       </td>
@@ -360,7 +361,7 @@ function AdminDoctorsPage() {
               />
 
               <p className="text-[11px] text-on-surface-variant/80">
-                Catatan: Dokter yang didaftarkan akan otomatis dibuatkan profil dokter dan masuk ke daftar di bawah. Setelah dibuat, Anda dapat langsung mengklik tombol <strong>Verifikasi Sekarang</strong> untuk mengaktifkan izin prakteknya.
+                Catatan: Dokter yang didaftarkan dapat langsung masuk ke portal dokter menggunakan email dan kata sandi ini setelah izin praktiknya disahkan.
               </p>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant/20">

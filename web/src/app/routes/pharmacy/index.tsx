@@ -314,7 +314,7 @@ function PharmacyDashboardPage() {
                     <tr>
                       <th className="px-6 py-3">ID Pesanan</th>
                       <th className="px-6 py-3">Tanggal Pesanan</th>
-                      <th className="px-6 py-3">Pasien (UUID)</th>
+                      <th className="px-6 py-3">ID Pasien</th>
                       <th className="px-6 py-3">Total Biaya</th>
                       <th className="px-6 py-3">Status</th>
                       <th className="px-6 py-3 text-right">Aksi</th>
@@ -531,12 +531,12 @@ function PharmacyDashboardPage() {
 
             <div className="p-4 rounded-xl border border-outline-variant/20 bg-surface-container-low text-xs font-semibold text-on-surface-variant flex flex-col gap-2">
               <div className="flex justify-between">
-                <span>Pasien UUID:</span>
+                <span>ID Pasien:</span>
                 <span className="font-mono text-on-surface">{selectedOrder.patient_id}</span>
               </div>
               {selectedOrder.prescription_id && (
                 <div className="flex justify-between">
-                  <span>Resep Digital Ref:</span>
+                  <span>Nomor Resep Digital:</span>
                   <span className="font-mono text-on-surface">#{selectedOrder.prescription_id.slice(0, 8)}</span>
                 </div>
               )}

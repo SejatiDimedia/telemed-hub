@@ -44,7 +44,7 @@ export const adminApi = {
   },
 
   listDoctors: (): Promise<DoctorProfile[]> => {
-    return apiClient.get<DoctorProfile[]>(`/doctors?_t=${Date.now()}`);
+    return apiClient.get<DoctorProfile[]>(`/doctors?limit=100&_t=${Date.now()}`);
   },
 
   verifyDoctor: (doctorId: string): Promise<{ message: string }> => {

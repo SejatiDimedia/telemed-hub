@@ -49,3 +49,36 @@ export interface ListAuditLogsParams {
   page?: number;
   limit?: number;
 }
+
+export function formatAuditAction(action: string): string {
+  const map: Record<string, string> = {
+    "doctor.verified": "Verifikasi Dokter",
+    "user.suspended": "Penangguhan Akun",
+    "user.role_assigned": "Pembaruan Peran",
+    "medical_record.read": "Akses Rekam Medis",
+    "medical_record.created": "Penerbitan Rekam Medis",
+    "appointment.created": "Janji Temu Baru",
+    "appointment.cancelled": "Pembatalan Janji Temu",
+  };
+  return map[action] || action.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function formatTargetType(targetType: string): string {
+  const map: Record<string, string> = {
+    doctor: "Profil Dokter",
+    user: "Akun Pengguna",
+    medical_record: "Rekam Medis",
+    appointment: "Konsultasi",
+  };
+  return map[targetType] || targetType;
+}
+
+export function formatRoleLabel(role: string): string {
+  const map: Record<string, string> = {
+    patient: "Pasien",
+    doctor: "Dokter",
+    pharmacy_staff: "Staf Farmasi",
+    admin: "Administrator",
+  };
+  return map[role] || role;
+}

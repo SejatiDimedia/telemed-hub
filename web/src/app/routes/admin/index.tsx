@@ -5,6 +5,7 @@ import {
   useAdminDoctors,
   useVerifyDoctorMutation,
 } from "../../../features/admin/hooks/use-admin";
+import { formatAuditAction, formatTargetType } from "../../../features/admin/types";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { Avatar } from "../../../components/ui/Avatar";
@@ -31,13 +32,13 @@ function AdminOverviewDashboard() {
         <div className="space-y-2 z-10 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
             <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
-            Pusat Kendali Administrasi & Otoritas
+            Panel Manajemen Layanan
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight">
-            Selamat Datang di Admin Control Center
+            Selamat Datang di Panel Pengelola
           </h1>
           <p className="text-body-sm text-on-surface-variant leading-relaxed">
-            Kelola verifikasi legalitas dokter, manajemen akses pengguna platform, serta pantau audit log keamanan rekam medis dalam satu kendali terpadu.
+            Kelola verifikasi dokter, akun pengguna, serta pantau catatan keamanan layanan dalam satu tempat terpadu.
           </p>
         </div>
 
@@ -92,7 +93,7 @@ function AdminOverviewDashboard() {
                 {isStatsLoading ? "..." : stats?.verified_doctors ?? 0}
               </h3>
               <p className="text-[11px] text-amber-600 font-semibold mt-0.5">
-                {pendingDoctors.length} Menunggu SIP
+                {pendingDoctors.length} Menunggu Verifikasi
               </p>
               <Link
                 to="/admin/doctors"
@@ -130,18 +131,18 @@ function AdminOverviewDashboard() {
         <Card className="rounded-2xl border border-outline-variant/30 bg-surface shadow-xs p-5 hover:border-purple-500/40 transition-colors group">
           <CardContent className="p-0 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-on-surface-variant">Log Audit Keamanan</p>
+              <p className="text-xs font-semibold text-on-surface-variant">Catatan Keamanan Layanan</p>
               <h3 className="font-display text-2xl font-black text-on-surface mt-1">
                 {isStatsLoading ? "..." : stats?.total_audit_logs ?? 0}
               </h3>
               <p className="text-[11px] text-on-surface-variant/80 mt-0.5">
-                Rekam Jejak Terenkripsi
+                Aman & Terlindungi
               </p>
               <Link
                 to="/admin/audit"
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-primary mt-3 group-hover:underline"
               >
-                Buka Log Audit &rarr;
+                Lihat Riwayat Keamanan &rarr;
               </Link>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
@@ -163,7 +164,7 @@ function AdminOverviewDashboard() {
                   Verifikasi Dokter Menunggu ({pendingDoctors.length})
                 </h2>
                 <p className="text-body-xs text-on-surface-variant mt-0.5">
-                  Praktisi medis yang membutuhkan pengesahan SIP/STR
+                  Praktisi medis yang menunggu persetujuan izin praktik
                 </p>
               </div>
               <Link
@@ -190,7 +191,7 @@ function AdminOverviewDashboard() {
                       <div>
                         <p className="text-xs font-bold text-on-surface">{doc.full_name}</p>
                         <p className="text-[11px] text-on-surface-variant">
-                          {doc.specialty?.name || "Dokter Umum"} • {doc.license_number || "SIP-PENDING"}
+                          {doc.specialty?.name || "Dokter Umum"} • {doc.license_number || "Belum dilampirkan"}
                         </p>
                       </div>
                     </div>
@@ -226,10 +227,10 @@ function AdminOverviewDashboard() {
               <div>
                 <h2 className="font-display text-base font-bold text-on-surface flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-[20px]">history</span>
-                  Aktivitas Audit Terbaru
+                  Aktivitas Keamanan Terbaru
                 </h2>
                 <p className="text-body-xs text-on-surface-variant mt-0.5">
-                  Log keamanan rekam medis dan otorisasi sistem
+                  Riwayat akses dan pembaruan sistem
                 </p>
               </div>
               <Link
@@ -242,7 +243,7 @@ function AdminOverviewDashboard() {
 
             <div className="p-4 sm:p-6 divide-y divide-outline-variant/15">
               {isAuditLogsLoading ? (
-                <div className="py-8 text-center text-xs text-on-surface-variant">Memuat audit log...</div>
+                <div className="py-8 text-center text-xs text-on-surface-variant">Memuat catatan...</div>
               ) : auditLogs.length === 0 ? (
                 <div className="py-8 text-center text-xs text-on-surface-variant">Belum ada catatan aktivitas.</div>
               ) : (
@@ -250,15 +251,17 @@ function AdminOverviewDashboard() {
                   <div key={log.id} className="py-3 flex items-center justify-between gap-4">
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                          {log.action}
+                        <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">
+                          {formatAuditAction(log.action)}
                         </span>
                         <span className="text-[11px] text-on-surface-variant">
-                          {log.target_type}: {log.target_id.slice(0, 8)}...
+                          {formatTargetType(log.target_type)}
                         </span>
                       </div>
                       <p className="text-[10px] text-on-surface-variant/70">
-                        IP: {log.ip_address || "127.0.0.1"}
+                        {log.ip_address && log.ip_address !== "127.0.0.1"
+                          ? `Jaringan: ${log.ip_address}`
+                          : "Koneksi Aman Terverifikasi"}
                       </p>
                     </div>
                     <div className="text-right text-[11px] text-on-surface-variant whitespace-nowrap">
@@ -278,7 +281,7 @@ function AdminOverviewDashboard() {
               to="/admin/audit"
               className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
             >
-              Lihat Seluruh Log Keamanan & Kepatuhan &rarr;
+              Lihat Seluruh Riwayat Keamanan &rarr;
             </Link>
           </div>
         </Card>

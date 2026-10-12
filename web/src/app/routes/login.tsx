@@ -66,7 +66,7 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     badge: "Sistem & Lisensi",
     email: "admin@telemedhub.com",
     icon: "admin_panel_settings",
-    description: "Verifikasi STR/SIP dokter, audit log keamanan, & kelola akun",
+    description: "Verifikasi izin dokter, catatan keamanan, & kelola akun",
   },
 ];
 
@@ -185,9 +185,9 @@ function LoginPage() {
                     <span className="material-symbols-outlined text-[20px]">videocam</span>
                   </div>
                   <div>
-                    <h3 className="text-body-sm font-bold text-on-surface">Konsultasi Tatap Muka Real-Time</h3>
+                    <h3 className="text-body-sm font-bold text-on-surface">Konsultasi Tatap Muka Terpadu</h3>
                     <p className="text-body-xs text-on-surface-variant leading-normal">
-                      Video HD WebRTC tanpa jeda dan ruang obrolan aman langsung dari browser Anda.
+                      Panggilan video berkualitas dan ruang obrolan aman langsung dari peramban Anda.
                     </p>
                   </div>
                 </div>
@@ -209,9 +209,9 @@ function LoginPage() {
                     <span className="material-symbols-outlined text-[20px]">verified_user</span>
                   </div>
                   <div>
-                    <h3 className="text-body-sm font-bold text-on-surface">Kerahasiaan Rekam Medis (PHI)</h3>
+                    <h3 className="text-body-sm font-bold text-on-surface">Kerahasiaan Rekam Medis Pasien</h3>
                     <p className="text-body-xs text-on-surface-variant leading-normal">
-                      Enkripsi end-to-end dengan rekaman jejak audit otomatis pada setiap akses data pasien.
+                      Enkripsi berstandar medis dengan pencatatan riwayat resmi pada setiap akses data pasien.
                     </p>
                   </div>
                 </div>
@@ -246,7 +246,7 @@ function LoginPage() {
               </span>
               <span className="font-medium text-emerald-700 dark:text-emerald-400">Sistem Operasional Normal</span>
             </div>
-            <span>v1.0 • Enterprise Monolith</span>
+            <span>v1.0 • Layanan Terverifikasi</span>
           </div>
         </div>
 
@@ -278,7 +278,7 @@ function LoginPage() {
                 Masuk ke Akun Anda
               </h2>
               <p className="text-body-sm text-on-surface-variant">
-                Gunakan kredensial terdaftar atau pilih peran demo di bawah untuk masuk ke dashboard.
+                Gunakan email dan kata sandi terdaftar atau pilih profil akses cepat di bawah.
               </p>
             </div>
 
@@ -287,7 +287,7 @@ function LoginPage() {
               <div className="flex items-center justify-between mb-2.5">
                 <label className="text-label-sm font-bold text-on-surface-variant flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[16px] text-primary">switch_account</span>
-                  Pilih Akses Cepat Demo:
+                  Pilihan Akun Cepat:
                 </label>
                 {currentRoleInfo && (
                   <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
@@ -446,12 +446,12 @@ function LoginPage() {
             </div>
 
             <p className="text-body-sm text-on-surface-variant leading-relaxed">
-              Untuk lingkungan demo TeleMedHub, semua akun demo menggunakan kata sandi bawaan:
+              Untuk akses cepat TeleMedHub, profil akun telah dilengkapi kata sandi bawaan:
             </p>
 
             <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/40 flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-semibold text-on-surface-variant">Password Demo Universal:</p>
+                <p className="text-[11px] font-semibold text-on-surface-variant">Kata Sandi Bawaan:</p>
                 <code className="text-sm font-bold text-primary font-mono">Rahasia123!</code>
               </div>
               <button
@@ -467,7 +467,7 @@ function LoginPage() {
             </div>
 
             <p className="text-body-xs text-on-surface-variant/80">
-              Jika ini akun pribadi di lingkungan produksi, silakan hubungi tim administrator di <span className="font-semibold text-on-surface">admin@telemedhub.com</span> untuk pemulihan akses.
+              Untuk akun pribadi resmi, silakan hubungi tim pengelola layanan di <span className="font-semibold text-on-surface">admin@telemedhub.com</span> untuk pemulihan akses.
             </p>
 
             <Button

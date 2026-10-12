@@ -75,9 +75,10 @@ export function useSuspendUserMutation() {
       adminApi.suspendUser(userId, status, reason),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: adminKeys.all });
+      const statusLabel = data.status === "suspended" ? "Ditangguhkan" : "Aktif";
       addToast({
         title: data.status === "suspended" ? "Akun Ditangguhkan" : "Akun Diaktifkan Kembali",
-        message: `Status pengguna ${data.full_name} (${data.email}) berhasil diperbarui menjadi ${data.status}.`,
+        message: `Status pengguna ${data.full_name} (${data.email}) berhasil diperbarui menjadi ${statusLabel}.`,
         type: "success",
       });
     },

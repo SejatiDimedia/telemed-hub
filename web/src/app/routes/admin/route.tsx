@@ -52,10 +52,10 @@ function AdminLayout() {
           <div className="flex items-center gap-2.5">
             <span className="material-symbols-outlined text-primary text-[24px]">admin_panel_settings</span>
             <span className="font-display font-bold text-lg text-on-surface hidden sm:inline">
-              Admin Control Center
+              Panel Pengelola
             </span>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Super Admin
+              Administrator
             </span>
           </div>
         </div>

@@ -5,6 +5,7 @@ import {
   useSuspendUserMutation,
   useAssignRoleMutation,
 } from "../../../features/admin/hooks/use-admin";
+import { formatRoleLabel } from "../../../features/admin/types";
 import type { AdminUser } from "../../../features/admin/types";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
@@ -61,13 +62,13 @@ function AdminUsersPage() {
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-2">
             <span className="material-symbols-outlined text-[16px]">manage_accounts</span>
-            Manajemen Pengguna & Otorisasi
+            Manajemen Pengguna Layanan
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight">
             Pengelolaan Akun & Peran Pengguna
           </h1>
           <p className="text-body-sm text-on-surface-variant mt-1">
-            Pantau status pengguna aktif, kelola hak akses peran (RBAC), atau tangguhkan akun yang melanggar ketentuan.
+            Pantau status pengguna aktif, kelola hak akses peran, atau tangguhkan akun yang melanggar ketentuan layanan.
           </p>
         </div>
 
@@ -173,9 +174,9 @@ function AdminUsersPage() {
                             return (
                               <span
                                 key={r}
-                                className={`px-2 py-0.5 rounded-md text-[11px] font-bold uppercase ${roleBadgeColor}`}
+                                className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${roleBadgeColor}`}
                               >
-                                {r}
+                                {formatRoleLabel(r)}
                               </span>
                             );
                           })}
@@ -221,7 +222,7 @@ function AdminUsersPage() {
                               : "text-error border-error/40 hover:bg-error/10"
                           }`}
                         >
-                          {isSuspended ? "Aktifkan" : "Suspend"}
+                          {isSuspended ? "Aktifkan" : "Tangguhkan"}
                         </Button>
                       </td>
                     </tr>
@@ -265,8 +266,8 @@ function AdminUsersPage() {
                 onChange={(e) => setSelectedRoleToAssign(e.target.value)}
                 className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl py-2.5 px-3 text-sm font-semibold text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="pharmacy_staff">Staf Farmasi (pharmacy_staff)</option>
-                <option value="admin">Administrator Sistem (admin)</option>
+                <option value="pharmacy_staff">Staf Farmasi</option>
+                <option value="admin">Administrator Sistem</option>
               </select>
             </div>
 

@@ -40,10 +40,12 @@ export function Sidebar({ items, className = "", isOpen = false, onClose }: Side
       >
       {/* Brand Header */}
       <div className="px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[32px] text-primary">
-            local_hospital
-          </span>
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <img
+            src="/logo_transparent.png"
+            alt="TeleMedHub Logo"
+            className="w-8 h-8 object-contain transition-transform group-hover:scale-105"
+          />
           <h1 className="text-headline-md font-bold text-primary tracking-tight">
             TeleMedHub
           </h1>

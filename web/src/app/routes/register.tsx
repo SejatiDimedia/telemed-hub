@@ -106,8 +106,12 @@ function RegisterPage() {
         <div className="hidden md:flex md:w-1/2 lg:w-5/12 bg-surface-container-low border-r border-outline-variant/30 flex-col justify-between p-12">
           <div>
             <Link to="/" className="inline-flex items-center gap-3 group mb-12">
-              <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center">
-                <span className="material-symbols-outlined text-[24px]">medical_services</span>
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center p-1.5">
+                <img
+                  src="/logo_transparent.png"
+                  alt="TeleMedHub Logo"
+                  className="w-full h-full object-contain transition-transform group-hover:scale-105"
+                />
               </div>
               <div>
                 <span className="font-display font-bold text-xl text-on-surface tracking-tight block">
@@ -156,8 +160,12 @@ function RegisterPage() {
           <div className="w-full max-w-md">
             {/* Mobile Header */}
             <div className="md:hidden flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
-              <Link to="/" className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-3xl">medical_services</span>
+              <Link to="/" className="flex items-center gap-2.5">
+                <img
+                  src="/logo_transparent.png"
+                  alt="TeleMedHub Logo"
+                  className="w-8 h-8 object-contain"
+                />
                 <span className="font-display font-bold text-xl text-on-surface">TeleMedHub</span>
               </Link>
             </div>

@@ -9,6 +9,9 @@
 5. Provide an internal wallet for consultation/medicine payment.
 6. Provide AI-assisted preliminary triage to help patients decide urgency.
 7. Keep the system modular enough that each domain can be learned, built, and tested independently.
+8. Provide transparent doctor quality assurance through verified patient ratings and reviews.
+9. Deliver seamless real-time virtual care with in-browser WebRTC video consultations and WebSocket messaging.
+10. Deliver a modern, full-width responsive web application tailored for patients, doctors, and pharmacy staff.
 
 ## 2. User Roles
 
@@ -57,6 +60,8 @@ Platform operator responsible for verifying doctor credentials, resolving disput
 - FR-9: A consultation session is created from a confirmed appointment.
 - FR-10: Session has lifecycle states: `scheduled → in_progress → completed → (cancelled)`.
 - FR-11: Doctor can attach consultation notes and issue a prescription during/after session.
+- FR-11a: **Real-Time Video & Audio Conferencing**: Consultations support live peer-to-peer WebRTC video/audio communication orchestrated via WebSocket signaling hub (`GET /api/v1/consultations/{id}/ws`). Features include camera/microphone toggling, screen sharing, connection state tracking, and fallback handling.
+- FR-11b: **Real-Time Persistent Chat & Collaboration**: In-room bidirectional chat messages delivered in real time via WebSocket and persisted into the database (`consultation_messages`). The room interface supports instant messaging, clinical patient summaries, diagnosis drafting, and real-time session termination broadcast.
 
 ### 4.4 Pharmacy & Orders
 - FR-12: Prescriptions can be converted into a pharmacy order by the patient.
@@ -92,6 +97,15 @@ Platform operator responsible for verifying doctor credentials, resolving disput
 ### 4.10 Admin
 - FR-28: Admin can view/manage users, verify doctors, view audit logs, and assign privileged roles (`pharmacy_staff`, `admin`) to existing users.
 
+### 4.11 Doctor Reviews & Reputation
+- FR-29: Patients can submit a rating (1 to 5 stars) and optional feedback review for a doctor following a consultation (`POST /api/v1/consultations/{id}/review`).
+- FR-30: **Review Integrity & Constraints**: Exactly one review per consultation is allowed, enforced by DB-level unique constraint (`consultation_id UNIQUE`). Only the patient of the consultation can submit a review (`403 FORBIDDEN` for other users), and reviews are only permitted once the consultation is finished (`422 UNPROCESSABLE_ENTITY` if status is not `completed`).
+- FR-31: **Reputation Aggregation & Invalidation**: Creating a review atomically updates the doctor's overall `rating` (numeric 3,2) and `total_reviews` count in the `doctors` table, invalidates relevant Redis caches (e.g. doctor list), and provides public review endpoints with star rating distribution breakdown (`GET /api/v1/doctors/{id}/reviews`).
+
+### 4.12 Frontend & User Experience
+- FR-32: **Full-Width Responsive Architecture**: All portals, pages, and consultation interfaces adopt a modern full-width layout (`w-full`) to maximize workspace utilization across desktop, tablet, and mobile screens.
+- FR-33: **Role-Based Portals**: Tailored web interfaces for Patients (doctor discovery, appointment booking, active consultation room, post-consultation review modals, prescription management, wallet top-up, and AI triage), Doctors (schedule management, consultation room with medical summary, prescription creation, review analytics), and Pharmacy Staff (order fulfillment and inventory updates).
+
 ## 5. Non-Functional Requirements
 
 | Category | Requirement |
@@ -99,7 +113,7 @@ Platform operator responsible for verifying doctor credentials, resolving disput
 | **Security** | Passwords hashed with **Argon2id** (time=1, memory=64MB, parallelism=4); JWT signed (HS256) & short-lived (15 min access / 30 day refresh); RBAC enforced at handler layer; rate limiting on sensitive endpoints; audit logging on all sensitive data access |
 | **Performance** | P95 API latency < 300ms for core read endpoints under nominal load; caching (Redis) for read-heavy endpoints from Sprint 14 onward |
 | **Scalability** | Stateless services; horizontal scaling supported; DB access via connection pooling (pgxpool) |
-| **Reliability** | Critical flows (wallet deduction, order creation, appointment booking) must be transactional and idempotent; notification queue durable via Redis Streams |
+| **Reliability** | Critical flows (wallet deduction, order creation, appointment booking, review calculation) must be transactional and idempotent; notification queue durable via Redis Streams |
 | **Maintainability** | Clean Architecture layering; domain logic framework-agnostic; AuditService interface for cross-module audit logging |
 | **Testability** | Domain/use-case layer unit-testable without infra dependencies; repository tests use real ephemeral DB via testcontainers |
 | **Observability** | Structured JSON logs via `slog`; `trace_id` propagated through `context.Context` on every request; basic metrics (latency, error rate) via `/metrics` endpoint |
@@ -109,24 +123,26 @@ Platform operator responsible for verifying doctor credentials, resolving disput
 ## 6. MVP Scope
 
 - Auth (Patient/Doctor registration, login, RBAC)
-- Appointment booking (basic, no recurring rules yet)
-- Consultation session lifecycle (metadata only, no real video)
-- Prescription issuance
-- Pharmacy order creation & status tracking
-- Wallet top-up & deduction
-- Basic medical record CRUD
-- Notification on key events (email only)
-- File upload for prescriptions/documents
+- Appointment booking (atomic reservation, cancellation & reschedule cutoff policies)
+- Consultation session lifecycle & interactive consultation room
+- Real-time WebRTC peer-to-peer video/audio calls & WebSocket persistent chat
+- Doctor reviews & rating system (verified patient feedback, rating aggregation)
+- Prescription issuance & pharmacy order fulfillment tracking
+- Wallet top-up & atomic balance deduction with idempotency protection
+- Basic medical record CRUD with audit logging
+- AI-assisted preliminary triage (symptom analysis & urgency recommendation)
+- Notification on key events (email channel via Redis Streams queue)
+- File upload for prescriptions/documents (MinIO object storage)
+- Full-width responsive React SPA frontend with dedicated portals for Patient, Doctor, and Pharmacy
 
 ## 7. Future Scope
 
-- Real-time chat/video (WebSocket/WebRTC)
-- Recurring availability rules & calendar sync
-- Multi-channel notifications (SMS/push)
+- Recurring availability rules & calendar sync (Google Calendar / iCal)
+- Multi-channel notifications (SMS/push notifications)
 - gRPC internal service communication
-- Insurance/claims module
-- Multi-tenant support (clinics as tenants)
-- Advanced AI diagnosis (multi-turn, image-based)
+- Insurance/claims module (BPJS / third-party payers)
+- Multi-tenant support (clinics and hospital chains as tenants)
+- Advanced AI diagnosis (multi-turn conversations, medical image analysis)
 
 ## 8. Assumptions
 

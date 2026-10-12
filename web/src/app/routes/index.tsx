@@ -12,8 +12,12 @@ export function HomePage() {
       <header className="border-b border-outline-variant/30 bg-surface/90 backdrop-blur-sm sticky top-0 z-40">
         <div className="w-full px-6 md:px-12 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-200">
-              <span className="material-symbols-outlined text-[24px]">medical_services</span>
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center p-1.5 transition-colors duration-200">
+              <img
+                src="/logo_transparent.png"
+                alt="TeleMedHub Logo"
+                className="w-full h-full object-contain transition-transform group-hover:scale-105"
+              />
             </div>
             <div>
               <span className="font-display font-bold text-xl text-on-surface tracking-tight block">

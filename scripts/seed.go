@@ -132,4 +132,29 @@ func main() {
 		}
 	}
 	fmt.Println("Doctors seeded successfully!")
+
+	// 3. Seed Admin
+	adminID := uuid.New()
+	_, err = pool.Exec(ctx, `
+		INSERT INTO users (id, email, password_hash, full_name, is_verified, status)
+		VALUES ($1, $2, $3, $4, true, 'active')
+		ON CONFLICT (email) DO NOTHING
+	`, adminID, "admin@telemedhub.com", hashedPassword, "Admin Bayu")
+	if err != nil {
+		log.Fatalf("Failed to insert admin: %v", err)
+	}
+
+	var actualAdminID uuid.UUID
+	_ = pool.QueryRow(ctx, "SELECT id FROM users WHERE email = 'admin@telemedhub.com'").Scan(&actualAdminID)
+
+	var adminRoleID uuid.UUID
+	err = pool.QueryRow(ctx, "SELECT id FROM roles WHERE name = 'admin'").Scan(&adminRoleID)
+	if err == nil {
+		_, _ = pool.Exec(ctx, `
+			INSERT INTO user_roles (user_id, role_id)
+			VALUES ($1, $2)
+			ON CONFLICT (user_id, role_id) DO NOTHING
+		`, actualAdminID, adminRoleID)
+	}
+	fmt.Println("Admin seeded successfully!")
 }

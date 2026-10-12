@@ -25,6 +25,7 @@ Rahasia123!
 | **Doctor** | `eko@telemedhub.com` | `Rahasia123!` | Dr. Eko Prasetyo | Spesialis Saraf (Neurologist) |
 | **Pharmacy Staff** | `sinta@telemedhub.com` | `Rahasia123!` | Sinta Pharmacy | Verifikasi & Pemrosesan Resep Obat, Manajemen Stok Farmasi |
 | **Pharmacy Staff** | `rehan@telemedhub.com` | `Rahasia123!` | Rehan Apoteker | Pengelolaan Pesanan Obat & Inventaris |
+| **Admin** | `admin@telemedhub.com` | `Rahasia123!` | Admin Bayu | Verifikasi Kredensial Dokter, Manajemen Pengguna, Log Audit Keamanan |
 
 ---
 

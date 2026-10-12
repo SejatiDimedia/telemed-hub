@@ -10,6 +10,8 @@ import (
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/handler"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/repository"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/service"
+	doctorService "github.com/timurdianradhasejati/telemed_hub/internal/doctor/service"
+	patientService "github.com/timurdianradhasejati/telemed_hub/internal/patient/service"
 )
 
 type Module struct {
@@ -23,9 +25,11 @@ func NewModule(
 	cfg *config.Config,
 	log *slog.Logger,
 	appointmentSvc appointmentService.AppointmentService,
+	doctorSvc doctorService.DoctorService,
+	patientSvc patientService.PatientService,
 ) *Module {
 	repo := repository.NewPostgresRepository(db)
-	svc := service.NewConsultationService(repo, appointmentSvc)
+	svc := service.NewConsultationService(repo, appointmentSvc, doctorSvc, patientSvc)
 	h := handler.NewConsultationHandler(svc, cfg, rdb, log)
 
 	return &Module{

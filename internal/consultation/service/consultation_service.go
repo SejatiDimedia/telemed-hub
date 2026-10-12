@@ -11,20 +11,29 @@ import (
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/dto"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/model"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/repository"
+	doctorDTO "github.com/timurdianradhasejati/telemed_hub/internal/doctor/dto"
+	doctorService "github.com/timurdianradhasejati/telemed_hub/internal/doctor/service"
+	patientService "github.com/timurdianradhasejati/telemed_hub/internal/patient/service"
 )
 
 type ConsultationServiceImpl struct {
 	repo           repository.ConsultationRepository
 	appointmentSvc appointmentService.AppointmentService
+	doctorSvc      doctorService.DoctorService
+	patientSvc     patientService.PatientService
 }
 
 func NewConsultationService(
 	repo repository.ConsultationRepository,
 	appointmentSvc appointmentService.AppointmentService,
+	doctorSvc doctorService.DoctorService,
+	patientSvc patientService.PatientService,
 ) *ConsultationServiceImpl {
 	return &ConsultationServiceImpl{
 		repo:           repo,
 		appointmentSvc: appointmentSvc,
+		doctorSvc:      doctorSvc,
+		patientSvc:     patientSvc,
 	}
 }
 
@@ -376,3 +385,66 @@ func (s *ConsultationServiceImpl) toResponse(c *model.Consultation) *dto.Consult
 		UpdatedAt:     c.UpdatedAt.Format(time.RFC3339),
 	}
 }
+
+func (s *ConsultationServiceImpl) CreateReview(ctx context.Context, consultationID uuid.UUID, patientUserID uuid.UUID, req doctorDTO.CreateReviewRequest) (*doctorDTO.ReviewResponse, error) {
+	// 1. Get consultation
+	cons, err := s.getConsultation(ctx, consultationID, patientUserID, []string{"patient"})
+	if err != nil {
+		return nil, ErrConsultationNotFound
+	}
+
+	// 2. Consultation must be in "completed" state
+	if cons.Status != "completed" {
+		return nil, ErrConsultationNotCompleted
+	}
+
+	// 3. Fetch appointment to verify patient ownership and get doctor/patient IDs
+	appt, err := s.appointmentSvc.GetByID(ctx, cons.AppointmentID, patientUserID, []string{"patient"})
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	// 4. Verify patient profile belongs to this patient
+	patProfile, err := s.patientSvc.GetProfileByUserID(ctx, patientUserID)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	if appt.PatientID != patProfile.ID {
+		return nil, ErrUnauthorized
+	}
+
+	// 5. Check if review already exists
+	if _, err := s.doctorSvc.GetReviewByConsultationID(ctx, cons.ID); err == nil {
+		return nil, ErrAlreadyReviewed
+	}
+
+	docUUID, err := uuid.Parse(appt.DoctorID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid doctor uuid in appointment: %w", err)
+	}
+
+	patUUID, err := uuid.Parse(patProfile.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid patient uuid in profile: %w", err)
+	}
+
+	// 6. Delegate review creation to doctorSvc
+	return s.doctorSvc.CreateReview(ctx, cons.ID, docUUID, patUUID, patientUserID, patProfile.FullName, req)
+}
+
+func (s *ConsultationServiceImpl) GetReview(ctx context.Context, consultationID uuid.UUID, userID uuid.UUID, roles []string) (*doctorDTO.ReviewResponse, error) {
+	cons, err := s.getConsultation(ctx, consultationID, userID, roles)
+	if err != nil {
+		return nil, ErrConsultationNotFound
+	}
+
+	// Verify caller has access to consultation
+	_, err = s.appointmentSvc.GetByID(ctx, cons.AppointmentID, userID, roles)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	return s.doctorSvc.GetReviewByConsultationID(ctx, cons.ID)
+}
+

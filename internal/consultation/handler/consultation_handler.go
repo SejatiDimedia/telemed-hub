@@ -15,6 +15,9 @@ import (
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/dto"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/hub"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/service"
+	doctorDTO "github.com/timurdianradhasejati/telemed_hub/internal/doctor/dto"
+	doctorRepo "github.com/timurdianradhasejati/telemed_hub/internal/doctor/repository"
+	doctorValidator "github.com/timurdianradhasejati/telemed_hub/internal/doctor/validator"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/httpresponse"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/middleware"
 )
@@ -52,6 +55,8 @@ func (h *ConsultationHandler) Routes() chi.Router {
 		r.Post("/{id}/start", h.Start)
 		r.Post("/{id}/complete", h.Complete)
 		r.Put("/{id}/notes", h.UpdateNotes)
+		r.Post("/{id}/review", h.CreateReview)
+		r.Get("/{id}/review", h.GetReview)
 	})
 
 	return r
@@ -380,3 +385,128 @@ func httpcallUnauthorized(w http.ResponseWriter) {
 func httpcallSuccess(w http.ResponseWriter, data any) {
 	httpresponse.Success(w, data)
 }
+
+// CreateReview handler.
+// POST /consultations/{id}/review
+func (h *ConsultationHandler) CreateReview(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+
+	roles, err := middleware.GetUserRoles(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+
+	isPatient := false
+	for _, role := range roles {
+		if role == "patient" {
+			isPatient = true
+			break
+		}
+	}
+	if !isPatient {
+		httpresponse.Error(w, http.StatusForbidden, "FORBIDDEN", "only patients can submit a consultation review")
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	consultationID, err := uuid.Parse(idStr)
+	if err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "INVALID_CONSULTATION_ID", "invalid consultation UUID format")
+		return
+	}
+
+	var req doctorDTO.CreateReviewRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "INVALID_REQUEST", "malformed request JSON")
+		return
+	}
+
+	review, err := h.svc.CreateReview(r.Context(), consultationID, userID, req)
+	if err != nil {
+		var valErrs doctorValidator.ValidationErrors
+		if errors.As(err, &valErrs) {
+			details := doctorValidator.ExtractValidationDetails(err)
+			httpresponse.JSON(w, http.StatusBadRequest, httpresponse.Response{
+				Success:   false,
+				Error:     "Validation failed",
+				ErrorCode: "VALIDATION_ERROR",
+				Data:      details,
+			})
+			return
+		}
+		if errors.Is(err, service.ErrConsultationNotFound) {
+			httpresponse.Error(w, http.StatusNotFound, "NOT_FOUND", "consultation not found")
+			return
+		}
+		if errors.Is(err, service.ErrConsultationNotCompleted) {
+			httpresponse.Error(w, http.StatusUnprocessableEntity, "CONSULTATION_NOT_COMPLETED", "consultation must be completed before submitting a review")
+			return
+		}
+		if errors.Is(err, service.ErrUnauthorized) {
+			httpresponse.Error(w, http.StatusForbidden, "FORBIDDEN", "unauthorized access to consultation")
+			return
+		}
+		if errors.Is(err, service.ErrAlreadyReviewed) || errors.Is(err, doctorRepo.ErrReviewAlreadyExists) {
+			httpresponse.Error(w, http.StatusConflict, "ALREADY_REVIEWED", "a review has already been submitted for this consultation")
+			return
+		}
+		h.logger.Error("failed to create consultation review", "error", err)
+		httpresponse.InternalError(w)
+		return
+	}
+
+	httpresponse.JSON(w, http.StatusCreated, httpresponse.Response{
+		Success: true,
+		Data:    review,
+	})
+}
+
+// GetReview handler.
+// GET /consultations/{id}/review
+func (h *ConsultationHandler) GetReview(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserID(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+
+	roles, err := middleware.GetUserRoles(r.Context())
+	if err != nil {
+		httpcallUnauthorized(w)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	consultationID, err := uuid.Parse(idStr)
+	if err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "INVALID_CONSULTATION_ID", "invalid consultation UUID format")
+		return
+	}
+
+	review, err := h.svc.GetReview(r.Context(), consultationID, userID, roles)
+	if err != nil {
+		if errors.Is(err, service.ErrConsultationNotFound) {
+			httpresponse.Error(w, http.StatusNotFound, "NOT_FOUND", "consultation not found")
+			return
+		}
+		if errors.Is(err, service.ErrUnauthorized) {
+			httpresponse.Error(w, http.StatusForbidden, "FORBIDDEN", "unauthorized access to consultation")
+			return
+		}
+		if errors.Is(err, doctorRepo.ErrReviewNotFound) {
+			httpresponse.Error(w, http.StatusNotFound, "REVIEW_NOT_FOUND", "no review found for this consultation")
+			return
+		}
+		h.logger.Error("failed to fetch consultation review", "error", err)
+		httpresponse.InternalError(w)
+		return
+	}
+
+	httpcallSuccess(w, review)
+}
+

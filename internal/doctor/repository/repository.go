@@ -15,6 +15,8 @@ var (
 	ErrSlotBooked           = errors.New("availability slot is already booked")
 	ErrDuplicatePhone       = errors.New("phone number already in use")
 	ErrInvalidSpecialty     = errors.New("specialty not found")
+	ErrReviewNotFound       = errors.New("review not found")
+	ErrReviewAlreadyExists  = errors.New("review for this consultation already exists")
 )
 
 // DoctorRepository defines data operations for Doctor profiles.
@@ -30,4 +32,9 @@ type DoctorRepository interface {
 	GetAvailabilityByID(ctx context.Context, slotID uuid.UUID) (*model.Availability, error)
 	ListAvailability(ctx context.Context, doctorID uuid.UUID, startTime time.Time, endTime time.Time, isBooked *bool) ([]*model.Availability, error)
 	CheckOverlappingSlot(ctx context.Context, doctorID uuid.UUID, startTime time.Time, endTime time.Time) (bool, error)
+
+	CreateReview(ctx context.Context, review *model.DoctorReview) error
+	GetReviewByConsultationID(ctx context.Context, consultationID uuid.UUID) (*model.DoctorReviewWithPatient, error)
+	ListReviewsByDoctorID(ctx context.Context, doctorID uuid.UUID, offset int, limit int) ([]*model.DoctorReviewWithPatient, *model.ReviewSummary, int, error)
+	UpdateDoctorRatingStats(ctx context.Context, doctorID uuid.UUID) error
 }

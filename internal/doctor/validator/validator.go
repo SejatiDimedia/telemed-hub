@@ -104,6 +104,27 @@ func ValidateUpdateDoctor(req dto.UpdateDoctorRequest) error {
 	return nil
 }
 
+func ValidateCreateReview(req dto.CreateReviewRequest) error {
+	var errs ValidationErrors
+
+	if req.Rating < 1 || req.Rating > 5 {
+		errs = append(errs, ValidationError{Field: "rating", Issue: "must be an integer between 1 and 5"})
+	}
+
+	if req.Comment != nil {
+		trimmed := strings.TrimSpace(*req.Comment)
+		if len(trimmed) > 1000 {
+			errs = append(errs, ValidationError{Field: "comment", Issue: "must not exceed 1000 characters"})
+		}
+	}
+
+	if len(errs) > 0 {
+		return errs
+	}
+
+	return nil
+}
+
 func ExtractValidationDetails(err error) []map[string]string {
 	var valErrs ValidationErrors
 	if errors.As(err, &valErrs) {

@@ -583,7 +583,7 @@ function PatientAppointmentsPage() {
                               <div className="flex items-center justify-end gap-2">
                                 {apt.status !== "cancelled" && (
                                   <Button
-                                    variant="primary"
+                                    variant={apt.status === "completed" ? "outline" : "primary"}
                                     size="sm"
                                     onClick={() =>
                                       void navigate({
@@ -591,12 +591,12 @@ function PatientAppointmentsPage() {
                                         params: { consultationId: apt.id },
                                       })
                                     }
-                                    className="py-1 px-3 rounded-full text-xs font-bold flex items-center gap-1 shadow-xs"
+                                    className="py-1 px-3.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs"
                                   >
                                     <span className="material-symbols-outlined text-[16px]">
-                                      videocam
+                                      {apt.status === "completed" ? "visibility" : "videocam"}
                                     </span>
-                                    {apt.status === "completed" ? "Lihat Sesi" : "Masuk Ruangan"}
+                                    {apt.status === "completed" ? "Lihat Sesi" : "Buka Sesi"}
                                   </Button>
                                 )}
                                 {canCancel && (

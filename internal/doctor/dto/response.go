@@ -21,6 +21,8 @@ type DoctorResponse struct {
 	LicenseNumber        *string            `json:"license_number,omitempty"`
 	IsCredentialVerified bool               `json:"is_credential_verified"`
 	ConsultationFee      int64              `json:"consultation_fee"`
+	Rating               float64            `json:"rating"`
+	TotalReviews         int                `json:"total_reviews"`
 }
 
 // SanitizeForPublic returns a copy of DoctorResponse with sensitive credentials omitted.

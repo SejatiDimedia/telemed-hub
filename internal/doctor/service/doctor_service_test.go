@@ -86,6 +86,32 @@ func (m *MockDoctorRepository) CheckOverlappingSlot(ctx context.Context, doctorI
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockDoctorRepository) CreateReview(ctx context.Context, review *model.DoctorReview) error {
+	args := m.Called(ctx, review)
+	return args.Error(0)
+}
+
+func (m *MockDoctorRepository) GetReviewByConsultationID(ctx context.Context, consultationID uuid.UUID) (*model.DoctorReviewWithPatient, error) {
+	args := m.Called(ctx, consultationID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.DoctorReviewWithPatient), args.Error(1)
+}
+
+func (m *MockDoctorRepository) ListReviewsByDoctorID(ctx context.Context, doctorID uuid.UUID, offset int, limit int) ([]*model.DoctorReviewWithPatient, *model.ReviewSummary, int, error) {
+	args := m.Called(ctx, doctorID, offset, limit)
+	if args.Get(0) == nil {
+		return nil, nil, 0, args.Error(3)
+	}
+	return args.Get(0).([]*model.DoctorReviewWithPatient), args.Get(1).(*model.ReviewSummary), args.Int(2), args.Error(3)
+}
+
+func (m *MockDoctorRepository) UpdateDoctorRatingStats(ctx context.Context, doctorID uuid.UUID) error {
+	args := m.Called(ctx, doctorID)
+	return args.Error(0)
+}
+
 type MockAuditService struct {
 	mock.Mock
 }
@@ -199,3 +225,107 @@ func TestDoctorService_VerifyDoctor(t *testing.T) {
 		mockAudit.AssertExpectations(t)
 	})
 }
+
+func TestDoctorService_Reviews(t *testing.T) {
+	mockRepo := new(MockDoctorRepository)
+	svc := NewDoctorService(mockRepo, nil, nil)
+
+	ctx := context.Background()
+	consultationID := uuid.New()
+	doctorID := uuid.New()
+	patientID := uuid.New()
+	creatorUserID := uuid.New()
+	patientName := "Siti Aminah"
+
+	t.Run("Success create review", func(t *testing.T) {
+		comment := "Pelayanan dokter sangat memuaskan."
+		req := dto.CreateReviewRequest{
+			Rating:  5,
+			Comment: &comment,
+		}
+
+		mockRepo.On("CreateReview", ctx, mock.MatchedBy(func(r *model.DoctorReview) bool {
+			return r.ConsultationID == consultationID && r.DoctorID == doctorID && r.Rating == 5 && *r.Comment == comment
+		})).Return(nil).Once()
+		mockRepo.On("UpdateDoctorRatingStats", ctx, doctorID).Return(nil).Once()
+
+		resp, err := svc.CreateReview(ctx, consultationID, doctorID, patientID, creatorUserID, patientName, req)
+		require.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, 5, resp.Rating)
+		assert.Equal(t, &comment, resp.Comment)
+		assert.Equal(t, patientName, resp.PatientName)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Create review validation failure", func(t *testing.T) {
+		req := dto.CreateReviewRequest{
+			Rating: 0, // invalid
+		}
+
+		resp, err := svc.CreateReview(ctx, consultationID, doctorID, patientID, creatorUserID, patientName, req)
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+	})
+
+	t.Run("Success get review by consultation ID", func(t *testing.T) {
+		comment := "Bagus"
+		rev := &model.DoctorReviewWithPatient{
+			ID:             uuid.New(),
+			ConsultationID: consultationID,
+			DoctorID:       doctorID,
+			PatientID:      patientID,
+			PatientName:    patientName,
+			Rating:         4,
+			Comment:        &comment,
+			CreatedAt:      time.Now(),
+		}
+		mockRepo.On("GetReviewByConsultationID", ctx, consultationID).Return(rev, nil).Once()
+
+		resp, err := svc.GetReviewByConsultationID(ctx, consultationID)
+		require.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, 4, resp.Rating)
+		assert.Equal(t, patientName, resp.PatientName)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Success get doctor reviews list with summary", func(t *testing.T) {
+		summary := &model.ReviewSummary{
+			AverageRating: 4.8,
+			TotalReviews:  12,
+			RatingCounts: map[int]int{
+				5: 10,
+				4: 2,
+				3: 0,
+				2: 0,
+				1: 0,
+			},
+		}
+		comment := "Hebat"
+		reviews := []*model.DoctorReviewWithPatient{
+			{
+				ID:             uuid.New(),
+				ConsultationID: consultationID,
+				DoctorID:       doctorID,
+				PatientID:      patientID,
+				PatientName:    patientName,
+				Rating:         5,
+				Comment:        &comment,
+				CreatedAt:      time.Now(),
+			},
+		}
+
+		mockRepo.On("ListReviewsByDoctorID", ctx, doctorID, 0, 10).Return(reviews, summary, 12, nil).Once()
+
+		resp, totalItems, err := svc.GetDoctorReviews(ctx, doctorID, 1, 10)
+		require.NoError(t, err)
+		assert.Equal(t, 12, totalItems)
+		assert.NotNil(t, resp)
+		assert.Equal(t, 4.8, resp.Summary.AverageRating)
+		assert.Equal(t, 12, resp.Summary.TotalReviews)
+		assert.Len(t, resp.Reviews, 1)
+		mockRepo.AssertExpectations(t)
+	})
+}
+

@@ -26,8 +26,12 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
   const isDoctor = user?.role === "doctor";
   const addToast = useToastStore((state) => state.addToast);
 
-  // Active tab on right sidebar (for doctor: 'chat' | 'clinical')
+  // Tab state in doctor sidebar ('chat' | 'clinical')
   const [activeTab, setActiveTab] = useState<"chat" | "clinical">("chat");
+
+  // Mobile segmented view ('video' | 'panel')
+  const [mobileView, setMobileView] = useState<"video" | "panel">("video");
+
   const [isEndCallDialogOpen, setIsEndCallDialogOpen] = useState(false);
 
   // Fetch consultation room data
@@ -132,24 +136,27 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
 
   if (isLoading) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 text-center">
-        <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-        <p className="text-sm font-bold text-on-surface">Memuat Ruang Konsultasi Medis...</p>
+      <div className="min-h-[75vh] flex flex-col items-center justify-center gap-3.5 text-center p-6">
+        <div className="w-10 h-10 rounded-full border-3 border-primary border-t-transparent animate-spin" />
+        <p className="text-sm font-bold text-on-surface">Menghubungkan Ruang Konsultasi Medis...</p>
+        <p className="text-xs text-on-surface-variant max-w-xs">
+          Menginisialisasi sinyal aman WebRTC dan data klinis pasien.
+        </p>
       </div>
     );
   }
 
   if (isError || !room) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 text-center p-6">
-        <span className="material-symbols-outlined text-5xl text-error">
-          videocam_off
-        </span>
-        <h3 className="text-lg font-bold text-on-surface">Gagal Membuka Ruang Konsultasi</h3>
-        <p className="text-xs text-on-surface-variant max-w-sm">
+      <div className="min-h-[75vh] flex flex-col items-center justify-center gap-4 text-center p-6">
+        <div className="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center text-error">
+          <span className="material-symbols-outlined text-3xl">videocam_off</span>
+        </div>
+        <h3 className="text-base font-bold text-on-surface">Gagal Membuka Ruang Konsultasi</h3>
+        <p className="text-xs text-on-surface-variant max-w-sm leading-relaxed">
           {error instanceof Error
             ? error.message
-            : "Anda tidak memiliki otorisasi untuk mengakses sesi konsultasi ini atau ruangan tidak ditemukan."}
+            : "Sesi konsultasi tidak ditemukan atau akun Anda tidak memiliki akses ke ruangan ini."}
         </p>
         <Button
           variant="outline"
@@ -165,52 +172,85 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
   const myParticipant = isDoctor ? room.doctor : room.patient;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] max-w-7xl mx-auto gap-4 p-2 sm:p-4">
+    <div className="flex flex-col h-[calc(100vh-4.5rem)] max-w-7xl mx-auto gap-3 p-2 sm:p-4">
       {/* Top Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-3.5 rounded-2xl border border-outline-variant/30 shadow-xs select-none">
+      <header className="flex flex-wrap items-center justify-between gap-3 bg-white px-4 py-3 rounded-2xl border border-outline-variant/30 shadow-xs select-none">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setIsEndCallDialogOpen(true)}
-            className="p-2 -ml-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors"
-            title="Kembali"
+            className="p-1.5 -ml-1 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors"
+            title="Keluar dari Ruangan"
+            aria-label="Kembali ke Dashboard"
           >
             <span className="material-symbols-outlined text-[20px]">arrow_back</span>
           </button>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-on-surface leading-tight">
-                Ruang Konsultasi Medis
+                Konsultasi Medis Tatap Muka
               </h2>
               <Badge variant={room.status === "completed" ? "info" : "success"}>
-                {room.status.toUpperCase()}
+                {room.status === "completed" ? "SELESAI" : "SEDANG BERJALAN"}
               </Badge>
             </div>
-            <p className="text-[11px] text-on-surface-variant/80 font-medium mt-0.5">
-              {isDoctor ? `Pasien: ${room.patient.name}` : `Dokter: ${room.doctor.name}`} • ID Sesi: {room.consultation_id.slice(0, 8)}...
+            <p className="text-[11px] text-on-surface-variant font-medium mt-0.5">
+              {isDoctor ? `Pasien: ${room.patient.name}` : `Dokter: ${room.doctor.name}`}
+              <span className="mx-1.5 text-outline-variant">•</span>
+              Sesi #{room.consultation_id.slice(0, 8)}
             </p>
           </div>
         </div>
 
-        {/* Doctor Actions / End Call */}
-        <div className="flex items-center gap-2.5">
-          {isDoctor && (
+        {/* Header Right Actions */}
+        <div className="flex items-center gap-2">
+          {/* Mobile View Toggle */}
+          <div className="flex lg:hidden bg-surface-container p-0.5 rounded-xl border border-outline-variant/30 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setMobileView("video")}
+              className={`px-3 py-1 rounded-lg transition-colors ${
+                mobileView === "video"
+                  ? "bg-white text-primary shadow-xs"
+                  : "text-on-surface-variant"
+              }`}
+            >
+              Video
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileView("panel")}
+              className={`px-3 py-1 rounded-lg transition-colors ${
+                mobileView === "panel"
+                  ? "bg-white text-primary shadow-xs"
+                  : "text-on-surface-variant"
+              }`}
+            >
+              {isDoctor ? "Panel Medis" : "Chat"}
+            </button>
+          </div>
+
+          {isDoctor && room.status !== "completed" && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsEndCallDialogOpen(true)}
-              className="text-xs font-bold text-red-600 border-red-200 hover:bg-red-50"
+              className="text-xs font-bold text-red-600 border-red-200 hover:bg-red-50 h-8 px-3"
             >
-              Selesaikan Konsultasi
+              Selesaikan Sesi
             </Button>
           )}
         </div>
-      </div>
+      </header>
 
       {/* Main Workspace Grid (Video on Left, Panel on Right) */}
-      <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
-        {/* Left Column: Video Call Area */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col min-h-0">
+      <main className="flex-1 grid grid-cols-12 gap-3 min-h-0">
+        {/* Left Column: Video Call Stage */}
+        <div
+          className={`col-span-12 lg:col-span-8 flex flex-col min-h-0 ${
+            mobileView === "panel" ? "hidden lg:flex" : "flex"
+          }`}
+        >
           <VideoCallArea
             localStream={localStream}
             remoteStream={remoteStream}
@@ -224,17 +264,28 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
             onToggleMic={toggleMic}
             onToggleCamera={toggleCamera}
             onToggleScreenShare={toggleScreenShare}
-            onEndCall={() => setIsEndCallDialogOpen(true)}
+            onEndCall={() => {
+              if (room.status === "completed") {
+                void navigate({ to: isDoctor ? "/doctor" : "/patient/appointments" });
+              } else {
+                setIsEndCallDialogOpen(true);
+              }
+            }}
             isDoctor={isDoctor}
+            isCompleted={room.status === "completed"}
           />
         </div>
 
         {/* Right Column: In-room Sidebar (Chat & Clinical Notes) */}
-        <div className="col-span-12 lg:col-span-4 flex flex-col min-h-0">
+        <div
+          className={`col-span-12 lg:col-span-4 flex flex-col min-h-0 ${
+            mobileView === "video" ? "hidden lg:flex" : "flex"
+          }`}
+        >
           {isDoctor ? (
             <div className="flex flex-col h-full bg-white rounded-2xl border border-outline-variant/30 shadow-xs overflow-hidden">
               {/* Doctor Sidebar Tabs */}
-              <div className="grid grid-cols-2 p-1.5 bg-surface-container-low border-b border-outline-variant/20 select-none">
+              <div className="grid grid-cols-2 p-1 bg-surface-container-low border-b border-outline-variant/20 select-none">
                 <button
                   type="button"
                   onClick={() => setActiveTab("chat")}
@@ -244,7 +295,7 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
                       : "text-on-surface-variant hover:text-on-surface"
                   }`}
                 >
-                  Chat Langsung
+                  Pesan Chat
                 </button>
                 <button
                   type="button"
@@ -255,7 +306,7 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
                       : "text-on-surface-variant hover:text-on-surface"
                   }`}
                 >
-                  Catatan & Resep
+                  Rekam & Resep
                 </button>
               </div>
 
@@ -268,6 +319,7 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
                     onSendMessage={handleSendChatMessage}
                     isSending={isSendingMessage}
                     peerName={peerParticipant.name}
+                    isDoctor={true}
                   />
                 ) : (
                   <PatientClinicalSummary
@@ -285,21 +337,22 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
               onSendMessage={handleSendChatMessage}
               isSending={isSendingMessage}
               peerName={peerParticipant.name}
+              isDoctor={false}
             />
           )}
         </div>
-      </div>
+      </main>
 
       {/* Confirmation Dialog on End Call / Exit */}
       <Dialog
         isOpen={isEndCallDialogOpen}
         onClose={() => setIsEndCallDialogOpen(false)}
-        title={isDoctor ? "Selesaikan Konsultasi Medis?" : "Keluar dari Ruang Konsultasi?"}
+        title={isDoctor ? "Selesaikan Konsultasi Medis?" : "Keluar dari Ruangan?"}
       >
         <div className="space-y-4 select-none">
           <p className="text-xs text-on-surface-variant leading-relaxed">
             {isDoctor
-              ? "Menyelesaikan sesi ini akan menandai konsultasi dan janji temu sebagai Selesai. Pasien akan dapat melihat catatan diagnosis serta menebus resep obat yang telah dibuat."
+              ? "Menyelesaikan sesi ini akan menutup ruang tatap muka video dan menandai janji temu sebagai selesai. Pasien akan dapat melihat catatan diagnosis serta menebus resep obat yang telah diterbitkan."
               : "Apakah Anda yakin ingin meninggalkan ruang konsultasi? Anda dapat masuk kembali ke ruangan selama sesi konsultasi masih berlangsung."}
           </p>
           <div className="flex justify-end gap-2.5 pt-2">

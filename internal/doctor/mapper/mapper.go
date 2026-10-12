@@ -42,6 +42,48 @@ func ToResponse(doctor *model.Doctor) *dto.DoctorResponse {
 		LicenseNumber:        doctor.LicenseNumber,
 		IsCredentialVerified: doctor.IsCredentialVerified,
 		ConsultationFee:      doctor.ConsultationFee,
+		Rating:               doctor.Rating,
+		TotalReviews:         doctor.TotalReviews,
+	}
+}
+
+// ToReviewResponse maps a DoctorReviewWithPatient model to a ReviewResponse DTO.
+func ToReviewResponse(r *model.DoctorReviewWithPatient) *dto.ReviewResponse {
+	if r == nil {
+		return nil
+	}
+	return &dto.ReviewResponse{
+		ID:             r.ID.String(),
+		ConsultationID: r.ConsultationID.String(),
+		DoctorID:       r.DoctorID.String(),
+		PatientID:      r.PatientID.String(),
+		PatientName:    r.PatientName,
+		Rating:         r.Rating,
+		Comment:        r.Comment,
+		CreatedAt:      r.CreatedAt,
+	}
+}
+
+// ToReviewResponseList maps a list of DoctorReviewWithPatient to ReviewResponse DTOs.
+func ToReviewResponseList(reviews []*model.DoctorReviewWithPatient) []dto.ReviewResponse {
+	resp := make([]dto.ReviewResponse, len(reviews))
+	for i, r := range reviews {
+		resp[i] = *ToReviewResponse(r)
+	}
+	return resp
+}
+
+// ToReviewSummaryResponse maps ReviewSummary model to ReviewSummaryResponse DTO.
+func ToReviewSummaryResponse(s *model.ReviewSummary) dto.ReviewSummaryResponse {
+	if s == nil {
+		return dto.ReviewSummaryResponse{
+			RatingCounts: make(map[int]int),
+		}
+	}
+	return dto.ReviewSummaryResponse{
+		AverageRating: s.AverageRating,
+		TotalReviews:  s.TotalReviews,
+		RatingCounts:  s.RatingCounts,
 	}
 }
 

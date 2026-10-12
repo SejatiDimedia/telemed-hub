@@ -17,6 +17,7 @@ import (
 	"github.com/timurdianradhasejati/telemed_hub/internal/config"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/dto"
 	"github.com/timurdianradhasejati/telemed_hub/internal/consultation/service"
+	doctorDTO "github.com/timurdianradhasejati/telemed_hub/internal/doctor/dto"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/logger"
 	"github.com/timurdianradhasejati/telemed_hub/pkg/middleware"
 )
@@ -89,6 +90,22 @@ func (m *MockConsultationService) ListMessages(ctx context.Context, consultation
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]dto.MessageResponse), args.Error(1)
+}
+
+func (m *MockConsultationService) CreateReview(ctx context.Context, consultationID uuid.UUID, patientUserID uuid.UUID, req doctorDTO.CreateReviewRequest) (*doctorDTO.ReviewResponse, error) {
+	args := m.Called(ctx, consultationID, patientUserID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*doctorDTO.ReviewResponse), args.Error(1)
+}
+
+func (m *MockConsultationService) GetReview(ctx context.Context, consultationID uuid.UUID, userID uuid.UUID, roles []string) (*doctorDTO.ReviewResponse, error) {
+	args := m.Called(ctx, consultationID, userID, roles)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*doctorDTO.ReviewResponse), args.Error(1)
 }
 
 func TestConsultationHandler_Start(t *testing.T) {
@@ -300,4 +317,131 @@ func TestConsultationHandler_Messages(t *testing.T) {
 		mockSvc.AssertExpectations(t)
 	})
 }
+
+func TestConsultationHandler_Reviews(t *testing.T) {
+	mockSvc := new(MockConsultationService)
+	cfg := &config.Config{}
+	log := logger.Setup("error")
+	h := NewConsultationHandler(mockSvc, cfg, nil, log)
+
+	r := chi.NewRouter()
+	r.Post("/consultations/{id}/review", h.CreateReview)
+	r.Get("/consultations/{id}/review", h.GetReview)
+
+	consID := uuid.New()
+	patientUserID := uuid.New()
+	comment := "Sangat puas dengan penjelasannya"
+	reqBody := doctorDTO.CreateReviewRequest{
+		Rating:  5,
+		Comment: &comment,
+	}
+
+	t.Run("Non-patient role returns 403 Forbidden", func(t *testing.T) {
+		body, _ := json.Marshal(reqBody)
+		req, _ := http.NewRequest(http.MethodPost, "/consultations/"+consID.String()+"/review", bytes.NewReader(body))
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, patientUserID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"doctor"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusForbidden, rec.Code)
+	})
+
+	t.Run("Consultation not completed returns 422", func(t *testing.T) {
+		mockSvc.On("CreateReview", mock.Anything, consID, patientUserID, reqBody).Return(nil, service.ErrConsultationNotCompleted).Once()
+
+		body, _ := json.Marshal(reqBody)
+		req, _ := http.NewRequest(http.MethodPost, "/consultations/"+consID.String()+"/review", bytes.NewReader(body))
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, patientUserID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"patient"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+		mockSvc.AssertExpectations(t)
+	})
+
+	t.Run("Already reviewed returns 409 Conflict", func(t *testing.T) {
+		mockSvc.On("CreateReview", mock.Anything, consID, patientUserID, reqBody).Return(nil, service.ErrAlreadyReviewed).Once()
+
+		body, _ := json.Marshal(reqBody)
+		req, _ := http.NewRequest(http.MethodPost, "/consultations/"+consID.String()+"/review", bytes.NewReader(body))
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, patientUserID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"patient"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusConflict, rec.Code)
+		mockSvc.AssertExpectations(t)
+	})
+
+	t.Run("Success create review returns 201 Created", func(t *testing.T) {
+		createdReview := &doctorDTO.ReviewResponse{
+			ID:             uuid.New().String(),
+			ConsultationID: consID.String(),
+			Rating:         5,
+			Comment:        &comment,
+			PatientName:    "Rina S.",
+		}
+		mockSvc.On("CreateReview", mock.Anything, consID, patientUserID, reqBody).Return(createdReview, nil).Once()
+
+		body, _ := json.Marshal(reqBody)
+		req, _ := http.NewRequest(http.MethodPost, "/consultations/"+consID.String()+"/review", bytes.NewReader(body))
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, patientUserID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"patient"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		var envelope struct {
+			Success bool                    `json:"success"`
+			Data    *doctorDTO.ReviewResponse `json:"data"`
+		}
+		err := json.NewDecoder(rec.Body).Decode(&envelope)
+		require.NoError(t, err)
+		assert.True(t, envelope.Success)
+		assert.Equal(t, 5, envelope.Data.Rating)
+		assert.Equal(t, "Rina S.", envelope.Data.PatientName)
+		mockSvc.AssertExpectations(t)
+	})
+
+	t.Run("Success get review returns 200 OK", func(t *testing.T) {
+		reviewResp := &doctorDTO.ReviewResponse{
+			ID:             uuid.New().String(),
+			ConsultationID: consID.String(),
+			Rating:         5,
+			Comment:        &comment,
+			PatientName:    "Rina S.",
+		}
+		mockSvc.On("GetReview", mock.Anything, consID, patientUserID, []string{"patient"}).Return(reviewResp, nil).Once()
+
+		req, _ := http.NewRequest(http.MethodGet, "/consultations/"+consID.String()+"/review", nil)
+		ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, patientUserID)
+		ctx = context.WithValue(ctx, middleware.RolesContextKey, []string{"patient"})
+		req = req.WithContext(ctx)
+
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+		var envelope struct {
+			Success bool                    `json:"success"`
+			Data    *doctorDTO.ReviewResponse `json:"data"`
+		}
+		err := json.NewDecoder(rec.Body).Decode(&envelope)
+		require.NoError(t, err)
+		assert.True(t, envelope.Success)
+		assert.Equal(t, 5, envelope.Data.Rating)
+		mockSvc.AssertExpectations(t)
+	})
+}
+
 

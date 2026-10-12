@@ -150,7 +150,7 @@ func main() {
 	patientMod := patient.NewModule(dbPool, rdb, cfg, log)
 	doctorMod := doctor.NewModule(dbPool, rdb, cfg, auditSvc, log)
 	appointmentMod := appointment.NewModule(dbPool, cfg, rdb, log, patientMod.Service, doctorMod.Service, walletMod.Service, notificationMod.Service)
-	consultationMod := consultation.NewModule(dbPool, rdb, cfg, log, appointmentMod.Service)
+	consultationMod := consultation.NewModule(dbPool, rdb, cfg, log, appointmentMod.Service, doctorMod.Service, patientMod.Service)
 	prescriptionMod := prescription.NewModule(dbPool, rdb, cfg, log, consultationMod.Service, doctorMod.Service, patientMod.Service)
 	inventoryMod := inventory.NewModule(dbPool, rdb, cfg, log)
 	pharmacyMod := pharmacy.NewModule(dbPool, rdb, cfg, log, prescriptionMod.Service, inventoryMod.Service, patientMod.Service, walletMod.Service, notificationMod.Service)

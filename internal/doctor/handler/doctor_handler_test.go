@@ -94,6 +94,30 @@ func (m *MockDoctorService) InvalidateAvailabilityCache(ctx context.Context, doc
 	return args.Error(0)
 }
 
+func (m *MockDoctorService) CreateReview(ctx context.Context, consultationID, doctorID, patientID, creatorUserID uuid.UUID, patientName string, req dto.CreateReviewRequest) (*dto.ReviewResponse, error) {
+	args := m.Called(ctx, consultationID, doctorID, patientID, creatorUserID, patientName, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.ReviewResponse), args.Error(1)
+}
+
+func (m *MockDoctorService) GetReviewByConsultationID(ctx context.Context, consultationID uuid.UUID) (*dto.ReviewResponse, error) {
+	args := m.Called(ctx, consultationID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.ReviewResponse), args.Error(1)
+}
+
+func (m *MockDoctorService) GetDoctorReviews(ctx context.Context, doctorID uuid.UUID, page int, limit int) (*dto.DoctorReviewsResponse, int, error) {
+	args := m.Called(ctx, doctorID, page, limit)
+	if args.Get(0) == nil {
+		return nil, 0, args.Error(2)
+	}
+	return args.Get(0).(*dto.DoctorReviewsResponse), args.Int(1), args.Error(2)
+}
+
 func TestDoctorHandler_GetByID(t *testing.T) {
 	mockSvc := new(MockDoctorService)
 	cfg := &config.Config{}
@@ -167,3 +191,58 @@ func TestDoctorHandler_GetByID(t *testing.T) {
 		mockSvc.AssertExpectations(t)
 	})
 }
+
+func TestDoctorHandler_GetReviews(t *testing.T) {
+	mockSvc := new(MockDoctorService)
+	cfg := &config.Config{}
+	log := logger.Setup("error")
+	h := NewDoctorHandler(mockSvc, cfg, nil, log)
+
+	r := chi.NewRouter()
+	r.Get("/doctors/{id}/reviews", h.GetReviews)
+
+	doctorID := uuid.New()
+
+	t.Run("Success returns reviews with pagination", func(t *testing.T) {
+		comment := "Dokter ramah"
+		reviewsResp := &dto.DoctorReviewsResponse{
+			Summary: dto.ReviewSummaryResponse{
+				AverageRating: 5.0,
+				TotalReviews:  1,
+				RatingCounts:  map[int]int{5: 1},
+			},
+			Reviews: []dto.ReviewResponse{
+				{
+					ID:          uuid.New().String(),
+					DoctorID:    doctorID.String(),
+					Rating:      5,
+					Comment:     &comment,
+					PatientName: "Pasien A",
+				},
+			},
+		}
+
+		mockSvc.On("GetDoctorReviews", mock.Anything, doctorID, 1, 10).Return(reviewsResp, 1, nil).Once()
+
+		req, _ := http.NewRequest(http.MethodGet, "/doctors/"+doctorID.String()+"/reviews?page=1&limit=10", nil)
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusOK, rec.Code)
+		var envelope struct {
+			Success    bool                      `json:"success"`
+			Data       dto.DoctorReviewsResponse `json:"data"`
+			Pagination *struct {
+				TotalItems int `json:"total_items"`
+			} `json:"pagination"`
+		}
+		err := json.NewDecoder(rec.Body).Decode(&envelope)
+		require.NoError(t, err)
+		assert.True(t, envelope.Success)
+		assert.Equal(t, 5.0, envelope.Data.Summary.AverageRating)
+		assert.Equal(t, 1, envelope.Data.Summary.TotalReviews)
+		assert.Len(t, envelope.Data.Reviews, 1)
+		mockSvc.AssertExpectations(t)
+	})
+}
+

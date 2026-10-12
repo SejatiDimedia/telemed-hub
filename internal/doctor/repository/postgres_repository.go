@@ -24,7 +24,7 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 
 func (r *PostgresRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*model.Doctor, error) {
 	query := `
-		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
+		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.rating, d.total_reviews, d.created_at, d.updated_at, d.deleted_at
 		FROM doctors d
 		JOIN users u ON d.user_id = u.id
 		LEFT JOIN specialties s ON d.specialty_id = s.id
@@ -35,7 +35,7 @@ func (r *PostgresRepository) GetByUserID(ctx context.Context, userID uuid.UUID) 
 	var sName, sIcon, sDesc *string
 
 	err := r.db.QueryRow(ctx, query, userID).Scan(
-		&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
+		&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.Rating, &d.TotalReviews, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -58,7 +58,7 @@ func (r *PostgresRepository) GetByUserID(ctx context.Context, userID uuid.UUID) 
 
 func (r *PostgresRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Doctor, error) {
 	query := `
-		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
+		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.rating, d.total_reviews, d.created_at, d.updated_at, d.deleted_at
 		FROM doctors d
 		JOIN users u ON d.user_id = u.id
 		LEFT JOIN specialties s ON d.specialty_id = s.id
@@ -69,7 +69,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.
 	var sName, sIcon, sDesc *string
 
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
+		&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.Rating, &d.TotalReviews, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -164,6 +164,7 @@ func (r *PostgresRepository) List(ctx context.Context, specialty *string, onlyVe
 	allowedSortColumns := map[string]bool{
 		"consultation_fee": true,
 		"created_at":       true,
+		"rating":           true,
 	}
 	if !allowedSortColumns[sortBy] {
 		sortBy = "created_at"
@@ -210,7 +211,7 @@ func (r *PostgresRepository) List(ctx context.Context, specialty *string, onlyVe
 
 	// 2. Fetch records
 	selectQuery := fmt.Sprintf(`
-		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.created_at, d.updated_at, d.deleted_at
+		SELECT d.id, d.user_id, u.email, u.full_name, u.profile_picture_url, u.phone_number, d.specialty_id, s.id, s.name, s.image_icon, s.description, d.license_number, d.is_credential_verified, d.consultation_fee, d.rating, d.total_reviews, d.created_at, d.updated_at, d.deleted_at
 		FROM doctors d
 		JOIN users u ON d.user_id = u.id
 		LEFT JOIN specialties s ON d.specialty_id = s.id
@@ -232,7 +233,7 @@ func (r *PostgresRepository) List(ctx context.Context, specialty *string, onlyVe
 		var sID *uuid.UUID
 		var sName, sIcon, sDesc *string
 		err = rows.Scan(
-			&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
+			&d.ID, &d.UserID, &d.Email, &d.FullName, &d.ProfilePictureURL, &d.PhoneNumber, &d.SpecialtyID, &sID, &sName, &sIcon, &sDesc, &d.LicenseNumber, &d.IsCredentialVerified, &d.ConsultationFee, &d.Rating, &d.TotalReviews, &d.CreatedAt, &d.UpdatedAt, &d.DeletedAt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan doctor row: %w", err)
@@ -366,3 +367,166 @@ func (r *PostgresRepository) CheckOverlappingSlot(ctx context.Context, doctorID 
 	}
 	return exists, nil
 }
+
+func (r *PostgresRepository) CreateReview(ctx context.Context, review *model.DoctorReview) error {
+	query := `
+		INSERT INTO doctor_reviews (id, consultation_id, doctor_id, patient_id, rating, comment, created_at, updated_at, created_by, updated_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+
+	now := time.Now().UTC()
+	if review.ID == uuid.Nil {
+		review.ID = uuid.New()
+	}
+	review.CreatedAt = now
+	review.UpdatedAt = now
+
+	_, err := r.db.Exec(ctx, query,
+		review.ID,
+		review.ConsultationID,
+		review.DoctorID,
+		review.PatientID,
+		review.Rating,
+		review.Comment,
+		review.CreatedAt,
+		review.UpdatedAt,
+		review.CreatedBy,
+		review.UpdatedBy,
+	)
+	if err != nil {
+		if strings.Contains(err.Error(), "doctor_reviews_consultation_id_key") || strings.Contains(err.Error(), "idx_doctor_reviews_consultation_id") {
+			return ErrReviewAlreadyExists
+		}
+		return fmt.Errorf("failed to insert doctor review: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PostgresRepository) GetReviewByConsultationID(ctx context.Context, consultationID uuid.UUID) (*model.DoctorReviewWithPatient, error) {
+	query := `
+		SELECT r.id, r.consultation_id, r.doctor_id, r.patient_id, u.full_name, r.rating, r.comment, r.created_at
+		FROM doctor_reviews r
+		JOIN patients p ON r.patient_id = p.id
+		JOIN users u ON p.user_id = u.id
+		WHERE r.consultation_id = $1 AND r.deleted_at IS NULL`
+
+	var item model.DoctorReviewWithPatient
+	err := r.db.QueryRow(ctx, query, consultationID).Scan(
+		&item.ID,
+		&item.ConsultationID,
+		&item.DoctorID,
+		&item.PatientID,
+		&item.PatientName,
+		&item.Rating,
+		&item.Comment,
+		&item.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrReviewNotFound
+		}
+		return nil, fmt.Errorf("failed to fetch review by consultation ID: %w", err)
+	}
+
+	return &item, nil
+}
+
+func (r *PostgresRepository) ListReviewsByDoctorID(ctx context.Context, doctorID uuid.UUID, offset int, limit int) ([]*model.DoctorReviewWithPatient, *model.ReviewSummary, int, error) {
+	// 1. Get Summary (Average, Total, Counts per star)
+	summaryQuery := `
+		SELECT
+			COALESCE(ROUND(AVG(rating)::numeric, 2), 0.00),
+			COUNT(id),
+			COUNT(CASE WHEN rating = 1 THEN 1 END),
+			COUNT(CASE WHEN rating = 2 THEN 1 END),
+			COUNT(CASE WHEN rating = 3 THEN 1 END),
+			COUNT(CASE WHEN rating = 4 THEN 1 END),
+			COUNT(CASE WHEN rating = 5 THEN 1 END)
+		FROM doctor_reviews
+		WHERE doctor_id = $1 AND deleted_at IS NULL`
+
+	summary := &model.ReviewSummary{
+		RatingCounts: make(map[int]int),
+	}
+	var c1, c2, c3, c4, c5 int
+	err := r.db.QueryRow(ctx, summaryQuery, doctorID).Scan(
+		&summary.AverageRating,
+		&summary.TotalReviews,
+		&c1, &c2, &c3, &c4, &c5,
+	)
+	if err != nil {
+		return nil, nil, 0, fmt.Errorf("failed to get doctor review summary: %w", err)
+	}
+	summary.RatingCounts[1] = c1
+	summary.RatingCounts[2] = c2
+	summary.RatingCounts[3] = c3
+	summary.RatingCounts[4] = c4
+	summary.RatingCounts[5] = c5
+
+	totalItems := summary.TotalReviews
+
+	// 2. Fetch paginated reviews
+	listQuery := `
+		SELECT r.id, r.consultation_id, r.doctor_id, r.patient_id, u.full_name, r.rating, r.comment, r.created_at
+		FROM doctor_reviews r
+		JOIN patients p ON r.patient_id = p.id
+		JOIN users u ON p.user_id = u.id
+		WHERE r.doctor_id = $1 AND r.deleted_at IS NULL
+		ORDER BY r.created_at DESC
+		LIMIT $2 OFFSET $3`
+
+	rows, err := r.db.Query(ctx, listQuery, doctorID, limit, offset)
+	if err != nil {
+		return nil, nil, 0, fmt.Errorf("failed to query doctor reviews: %w", err)
+	}
+	defer rows.Close()
+
+	reviews := []*model.DoctorReviewWithPatient{}
+	for rows.Next() {
+		var item model.DoctorReviewWithPatient
+		err := rows.Scan(
+			&item.ID,
+			&item.ConsultationID,
+			&item.DoctorID,
+			&item.PatientID,
+			&item.PatientName,
+			&item.Rating,
+			&item.Comment,
+			&item.CreatedAt,
+		)
+		if err != nil {
+			return nil, nil, 0, fmt.Errorf("failed to scan doctor review: %w", err)
+		}
+		reviews = append(reviews, &item)
+	}
+
+	return reviews, summary, totalItems, nil
+}
+
+func (r *PostgresRepository) UpdateDoctorRatingStats(ctx context.Context, doctorID uuid.UUID) error {
+	query := `
+		UPDATE doctors
+		SET
+			rating = COALESCE((
+				SELECT ROUND(AVG(rating)::numeric, 2)
+				FROM doctor_reviews
+				WHERE doctor_id = $1 AND deleted_at IS NULL
+			), 0.00),
+			total_reviews = COALESCE((
+				SELECT COUNT(id)
+				FROM doctor_reviews
+				WHERE doctor_id = $1 AND deleted_at IS NULL
+			), 0),
+			updated_at = NOW()
+		WHERE id = $1 AND deleted_at IS NULL`
+
+	res, err := r.db.Exec(ctx, query, doctorID)
+	if err != nil {
+		return fmt.Errorf("failed to update doctor rating stats: %w", err)
+	}
+	if res.RowsAffected() == 0 {
+		return ErrDoctorNotFound
+	}
+	return nil
+}
+

@@ -393,3 +393,74 @@ func (s *DoctorServiceImpl) InvalidateDoctorListCache(ctx context.Context) error
 
 	return nil
 }
+
+func (s *DoctorServiceImpl) CreateReview(ctx context.Context, consultationID, doctorID, patientID, creatorUserID uuid.UUID, patientName string, req dto.CreateReviewRequest) (*dto.ReviewResponse, error) {
+	if err := validator.ValidateCreateReview(req); err != nil {
+		return nil, err
+	}
+
+	review := &model.DoctorReview{
+		ID:             uuid.New(),
+		ConsultationID: consultationID,
+		DoctorID:       doctorID,
+		PatientID:      patientID,
+		Rating:         req.Rating,
+		Comment:        req.Comment,
+		CreatedBy:      &creatorUserID,
+		UpdatedBy:      &creatorUserID,
+	}
+
+	if err := s.repo.CreateReview(ctx, review); err != nil {
+		return nil, err
+	}
+
+	// Update aggregate doctor stats
+	_ = s.repo.UpdateDoctorRatingStats(ctx, doctorID)
+
+	// Invalidate doctor list cache so updated rating/total_reviews appears immediately
+	_ = s.InvalidateDoctorListCache(ctx)
+
+	resp := &dto.ReviewResponse{
+		ID:             review.ID.String(),
+		ConsultationID: review.ConsultationID.String(),
+		DoctorID:       review.DoctorID.String(),
+		PatientID:      review.PatientID.String(),
+		PatientName:    patientName,
+		Rating:         review.Rating,
+		Comment:        review.Comment,
+		CreatedAt:      review.CreatedAt,
+	}
+
+	return resp, nil
+}
+
+func (s *DoctorServiceImpl) GetReviewByConsultationID(ctx context.Context, consultationID uuid.UUID) (*dto.ReviewResponse, error) {
+	review, err := s.repo.GetReviewByConsultationID(ctx, consultationID)
+	if err != nil {
+		return nil, err
+	}
+	return mapper.ToReviewResponse(review), nil
+}
+
+func (s *DoctorServiceImpl) GetDoctorReviews(ctx context.Context, doctorID uuid.UUID, page int, limit int) (*dto.DoctorReviewsResponse, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
+	reviews, summary, totalItems, err := s.repo.ListReviewsByDoctorID(ctx, doctorID, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	resp := &dto.DoctorReviewsResponse{
+		Summary: mapper.ToReviewSummaryResponse(summary),
+		Reviews: mapper.ToReviewResponseList(reviews),
+	}
+
+	return resp, totalItems, nil
+}
+

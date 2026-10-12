@@ -46,6 +46,7 @@ func (h *DoctorHandler) Routes() chi.Router {
 		r.Use(middleware.OptionalAuthMiddleware(h.cfg, h.rdb))
 		r.Get("/", h.List)
 		r.Get("/{id}", h.GetByID)
+		r.Get("/{id}/reviews", h.GetReviews)
 	})
 
 	// Private Doctor actions
@@ -441,6 +442,59 @@ func (h *DoctorHandler) AddAvailabilitySlotBulk(w http.ResponseWriter, r *http.R
 	httpcallResponse(w, http.StatusCreated, httpresponse.Response{
 		Success: true,
 		Data:    resp,
+	})
+}
+
+// GetReviews handler.
+// GET /doctors/{id}/reviews
+func (h *DoctorHandler) GetReviews(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	doctorID, err := uuid.Parse(idParam)
+	if err != nil {
+		httpresponse.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", "Invalid doctor ID format")
+		return
+	}
+
+	page := 1
+	if pStr := r.URL.Query().Get("page"); pStr != "" {
+		if p, err := strconv.Atoi(pStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	limit := 10
+	if lStr := r.URL.Query().Get("limit"); lStr != "" {
+		if l, err := strconv.Atoi(lStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	resp, totalItems, err := h.svc.GetDoctorReviews(r.Context(), doctorID, page, limit)
+	if err != nil {
+		if errors.Is(err, repository.ErrDoctorNotFound) {
+			httpresponse.Error(w, http.StatusNotFound, "NOT_FOUND", "Doctor not found")
+			return
+		}
+		h.logger.Error("failed to fetch doctor reviews", "error", err)
+		httpresponse.InternalError(w)
+		return
+	}
+
+	totalPages := (totalItems + limit - 1) / limit
+	if totalPages == 0 && totalItems == 0 {
+		totalPages = 1
+	}
+
+	httpresponse.JSON(w, http.StatusOK, httpresponse.Response{
+		Success:   true,
+		Data:      resp,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Pagination: &httpresponse.PaginationInfo{
+			Page:       page,
+			Limit:      limit,
+			TotalItems: totalItems,
+			TotalPages: totalPages,
+		},
 	})
 }
 

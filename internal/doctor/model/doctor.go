@@ -19,6 +19,8 @@ type Doctor struct {
 	LicenseNumber        *string    `json:"license_number"`
 	IsCredentialVerified bool       `json:"is_credential_verified"`
 	ConsultationFee      int64      `json:"consultation_fee"`
+	Rating               float64    `json:"rating"`
+	TotalReviews         int        `json:"total_reviews"`
 	CreatedAt            time.Time  `json:"created_at"`
 	UpdatedAt            time.Time  `json:"updated_at"`
 	DeletedAt            *time.Time `json:"deleted_at"`

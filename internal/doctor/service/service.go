@@ -25,4 +25,8 @@ type DoctorService interface {
 	RemoveAvailability(ctx context.Context, doctorUserID uuid.UUID, slotID uuid.UUID) error
 	GetAvailability(ctx context.Context, doctorID uuid.UUID, startTimeStr, endTimeStr string, isBooked *bool) ([]*dto.AvailabilityResponse, error)
 	InvalidateAvailabilityCache(ctx context.Context, doctorID uuid.UUID) error
+
+	CreateReview(ctx context.Context, consultationID, doctorID, patientID, creatorUserID uuid.UUID, patientName string, req dto.CreateReviewRequest) (*dto.ReviewResponse, error)
+	GetReviewByConsultationID(ctx context.Context, consultationID uuid.UUID) (*dto.ReviewResponse, error)
+	GetDoctorReviews(ctx context.Context, doctorID uuid.UUID, page int, limit int) (*dto.DoctorReviewsResponse, int, error)
 }

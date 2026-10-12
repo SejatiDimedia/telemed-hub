@@ -320,9 +320,7 @@ function DoctorDashboard() {
                             <span className="material-symbols-outlined text-[16px]">
                               videocam
                             </span>
-                            {apt.status === "in_progress"
-                              ? "Masuk Ruangan"
-                              : "Mulai di Ruang Konsultasi"}
+                            Buka Sesi
                           </Button>
                         </td>
                       </tr>
@@ -383,7 +381,7 @@ function DoctorDashboard() {
                         </td>
                         <td className="px-6 py-4 text-right select-none">
                           <Button
-                            variant="outline"
+                            variant={apt.status === "completed" ? "outline" : "primary"}
                             size="sm"
                             onClick={() =>
                               void navigate({
@@ -391,12 +389,12 @@ function DoctorDashboard() {
                                 params: { consultationId: apt.id },
                               })
                             }
-                            className="rounded-full px-3 py-1 text-xs font-bold flex items-center gap-1 ml-auto"
+                            className="rounded-full px-3.5 py-1 text-xs font-bold flex items-center gap-1.5 ml-auto"
                           >
                             <span className="material-symbols-outlined text-[16px]">
-                              chat
+                              {apt.status === "completed" ? "visibility" : "videocam"}
                             </span>
-                            Buka Sesi
+                            {apt.status === "completed" ? "Lihat Sesi" : "Buka Sesi"}
                           </Button>
                         </td>
                       </tr>

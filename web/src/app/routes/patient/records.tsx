@@ -140,6 +140,7 @@ function PatientRecordsPage() {
                     <thead className="bg-surface-container-low text-on-surface-variant text-label-sm uppercase tracking-wider select-none">
                       <tr>
                         <th className="px-6 py-4 font-bold">Kategori</th>
+                        <th className="px-6 py-4 font-bold">Dokter / Penerbit</th>
                         <th className="px-6 py-4 font-bold">Tanggal Pembuatan</th>
                         <th className="px-6 py-4 font-bold">Ringkasan Diagnosis / Catatan</th>
                         <th className="px-6 py-4 font-bold text-right">Aksi</th>
@@ -160,13 +161,33 @@ function PatientRecordsPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-body-sm text-on-surface font-semibold select-none">
+                          <td className="px-6 py-4">
+                            {record.doctor_name ? (
+                              <div className="flex flex-col">
+                                <span className="font-bold text-primary text-xs flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[14px]">stethoscope</span>
+                                  {record.doctor_name}
+                                </span>
+                                {record.doctor_specialty && (
+                                  <span className="text-[11px] text-on-surface-variant font-medium">
+                                    {record.doctor_specialty}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-on-surface-variant/70 italic flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px]">history_edu</span>
+                                Sistem / Pasien
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-body-sm text-on-surface font-semibold select-none whitespace-nowrap">
                             {formatRecordDate(record.created_at)}
                           </td>
                           <td className="px-6 py-4 text-body-sm text-on-surface-variant max-w-xs truncate font-medium">
                             {record.content}
                           </td>
-                          <td className="px-6 py-4 text-right select-none">
+                          <td className="px-6 py-4 text-right select-none whitespace-nowrap">
                             <Button
                               variant="outline"
                               size="sm"
@@ -240,6 +261,33 @@ function PatientRecordsPage() {
                 </div>
                 <div>{getRecordTypeBadge(activeRecord.record_type)}</div>
               </div>
+
+              {/* Doctor Attribution */}
+              {activeRecord.doctor_name ? (
+                <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex items-center gap-3 select-none">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[20px]">stethoscope</span>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                      Dokter Penerbit / Pemeriksa
+                    </span>
+                    <span className="text-xs font-bold text-on-surface truncate">
+                      {activeRecord.doctor_name}
+                    </span>
+                    {activeRecord.doctor_specialty && (
+                      <span className="text-[11px] text-primary font-semibold truncate">
+                        {activeRecord.doctor_specialty}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/20 flex items-center gap-2 text-xs text-on-surface-variant select-none">
+                  <span className="material-symbols-outlined text-[18px]">history_edu</span>
+                  <span>Dicatat oleh sistem atau rekam mandiri pasien.</span>
+                </div>
+              )}
 
               <div className="flex flex-col gap-1 select-none">
                 <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Tanggal & Waktu Pembuatan</span>

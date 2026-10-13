@@ -9,4 +9,7 @@ export interface MedicalRecord {
   file_id?: string | null;
   created_at: string;
   updated_at: string;
+  created_by?: string | null;
+  doctor_name?: string | null;
+  doctor_specialty?: string | null;
 }

@@ -260,13 +260,19 @@ func (s *ConsultationServiceImpl) GetRoom(ctx context.Context, consultationID uu
 		dobStr = &dStr
 	}
 
+	patIDStr := rd.PatientID.String()
+	docIDStr := rd.DoctorID.String()
+
 	return &dto.ConsultationRoomResponse{
 		ConsultationID: rd.ConsultationID.String(),
 		AppointmentID:  rd.AppointmentID.String(),
+		PatientID:      patIDStr,
+		DoctorID:       docIDStr,
 		Status:         rd.Status,
 		Notes:          rd.Notes,
 		Doctor: dto.ConsultationParticipant{
 			UserID:            rd.DoctorUserID.String(),
+			DoctorID:          &docIDStr,
 			Name:              rd.DoctorName,
 			Role:              "doctor",
 			ProfilePictureURL: rd.DoctorAvatar,
@@ -274,6 +280,7 @@ func (s *ConsultationServiceImpl) GetRoom(ctx context.Context, consultationID uu
 		},
 		Patient: dto.ConsultationParticipant{
 			UserID:            rd.PatientUserID.String(),
+			PatientID:         &patIDStr,
 			Name:              rd.PatientName,
 			Role:              "patient",
 			ProfilePictureURL: rd.PatientAvatar,

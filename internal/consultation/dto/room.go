@@ -2,6 +2,8 @@ package dto
 
 type ConsultationParticipant struct {
 	UserID            string  `json:"user_id"`
+	PatientID         *string `json:"patient_id,omitempty"`
+	DoctorID          *string `json:"doctor_id,omitempty"`
 	Name              string  `json:"name"`
 	Role              string  `json:"role"`
 	ProfilePictureURL *string `json:"profile_picture_url,omitempty"`
@@ -25,6 +27,8 @@ type MessageResponse struct {
 type ConsultationRoomResponse struct {
 	ConsultationID string                  `json:"consultation_id"`
 	AppointmentID  string                  `json:"appointment_id"`
+	PatientID      string                  `json:"patient_id,omitempty"`
+	DoctorID       string                  `json:"doctor_id,omitempty"`
 	Status         string                  `json:"status"`
 	Notes          *string                 `json:"notes,omitempty"`
 	Doctor         ConsultationParticipant `json:"doctor"`

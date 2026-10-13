@@ -15,14 +15,17 @@ type UpdateMedicalRecordRequest struct {
 }
 
 type MedicalRecordResponse struct {
-	ID             string  `json:"id"`
-	PatientID      string  `json:"patient_id"`
-	ConsultationID *string `json:"consultation_id,omitempty"`
-	RecordType     string  `json:"record_type"`
-	Content        string  `json:"content"`
-	FileID         *string `json:"file_id,omitempty"`
-	CreatedAt      string  `json:"created_at"`
-	UpdatedAt      string  `json:"updated_at"`
+	ID              string  `json:"id"`
+	PatientID       string  `json:"patient_id"`
+	ConsultationID  *string `json:"consultation_id,omitempty"`
+	RecordType      string  `json:"record_type"`
+	Content         string  `json:"content"`
+	FileID          *string `json:"file_id,omitempty"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+	CreatedBy       *string `json:"created_by,omitempty"`
+	DoctorName      *string `json:"doctor_name,omitempty"`
+	DoctorSpecialty *string `json:"doctor_specialty,omitempty"`
 }
 
 type ListMedicalRecordsFilter struct {

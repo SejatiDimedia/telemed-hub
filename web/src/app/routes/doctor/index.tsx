@@ -6,6 +6,7 @@ import { useMedicines } from "../../../features/pharmacy/hooks/use-pharmacy";
 import { useStartConsultation, useUpdateConsultationNotes, useCompleteConsultation } from "../../../features/consultation/hooks/use-consultations";
 import { useCreatePrescription } from "../../../features/prescription/hooks/use-prescriptions";
 import { useMedicalRecords, useCreateMedicalRecord } from "../../../features/medical-records/hooks/use-medical-records";
+import { MedicalRecordList } from "../../../features/medical-records/components/MedicalRecordList";
 import { useToastStore } from "../../../stores/toast-store";
 import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
@@ -526,51 +527,23 @@ function DoctorDashboard() {
 
             {/* Patient Medical History Panel (Sprint 5) */}
             <div className="p-5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3">
-              <h5 className="font-bold text-on-surface text-sm flex items-center gap-1.5 select-none">
-                <span className="material-symbols-outlined text-primary text-[18px]">history</span>
-                Riwayat Medis Pasien
-              </h5>
+              <div className="flex items-center justify-between select-none">
+                <h5 className="font-bold text-on-surface text-sm flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-primary text-[18px]">history</span>
+                  Riwayat Medis Pasien
+                </h5>
+                <span className="text-[11px] font-semibold text-on-surface-variant">
+                  {activePatientRecords?.length ?? 0} Catatan
+                </span>
+              </div>
               <div className="h-px bg-outline-variant/20 w-full select-none"></div>
 
-              {isRecordsLoading ? (
-                <div className="flex flex-col gap-2 animate-pulse">
-                  <div className="h-8 bg-surface-container rounded"></div>
-                  <div className="h-8 bg-surface-container rounded"></div>
-                </div>
-              ) : activePatientRecords && activePatientRecords.length > 0 ? (
-                <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-1">
-                  {activePatientRecords.map((record) => (
-                    <div
-                      key={record.id}
-                      className="p-2.5 rounded-lg bg-white border border-outline-variant/10 flex flex-col gap-1 text-xs"
-                    >
-                      <div className="flex items-center justify-between select-none">
-                        <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] uppercase tracking-wider ${
-                          record.record_type === "diagnosis"
-                            ? "bg-error/10 text-error border border-error/20"
-                            : record.record_type === "allergy"
-                            ? "bg-amber-600/10 text-amber-600 border border-amber-600/20"
-                            : record.record_type === "lab_result"
-                            ? "bg-green-600/10 text-green-600 border border-green-600/20"
-                            : "bg-primary/10 text-primary border border-primary/20"
-                        }`}>
-                          {record.record_type.replace("_", " ")}
-                        </span>
-                        <span className="text-[10px] text-on-surface-variant/80 font-semibold">
-                          {new Date(record.created_at).toLocaleDateString("id-ID")}
-                        </span>
-                      </div>
-                      <p className="text-on-surface font-medium leading-relaxed mt-1 break-words">
-                        {record.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-on-surface-variant/80 italic text-center py-4 select-none">
-                  Tidak ada riwayat medis sebelumnya.
-                </p>
-              )}
+              <MedicalRecordList
+                records={activePatientRecords}
+                isLoading={isRecordsLoading}
+                maxHeight="max-h-[350px]"
+                emptyMessage="Tidak ada riwayat medis untuk kategori ini."
+              />
             </div>
           </div>
 

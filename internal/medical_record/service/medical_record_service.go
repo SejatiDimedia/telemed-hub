@@ -356,15 +356,23 @@ func toResponse(r *model.MedicalRecord) *dto.MedicalRecordResponse {
 		s := r.FileID.String()
 		fIDStr = &s
 	}
+	var createdByStr *string
+	if r.CreatedBy != nil {
+		s := r.CreatedBy.String()
+		createdByStr = &s
+	}
 
 	return &dto.MedicalRecordResponse{
-		ID:             r.ID.String(),
-		PatientID:      r.PatientID.String(),
-		ConsultationID: cIDStr,
-		RecordType:     r.RecordType,
-		Content:        r.Content,
-		FileID:         fIDStr,
-		CreatedAt:      r.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:      r.UpdatedAt.Format(time.RFC3339),
+		ID:              r.ID.String(),
+		PatientID:       r.PatientID.String(),
+		ConsultationID:  cIDStr,
+		RecordType:      r.RecordType,
+		Content:         r.Content,
+		FileID:          fIDStr,
+		CreatedAt:       r.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       r.UpdatedAt.Format(time.RFC3339),
+		CreatedBy:       createdByStr,
+		DoctorName:      r.DoctorName,
+		DoctorSpecialty: r.DoctorSpecialty,
 	}
 }

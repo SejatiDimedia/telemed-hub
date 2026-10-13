@@ -19,4 +19,6 @@ type MedicalRecord struct {
 	CreatedBy      *uuid.UUID
 	UpdatedBy      *uuid.UUID
 	DeletedBy      *uuid.UUID
+	DoctorName     *string
+	DoctorSpecialty *string
 }

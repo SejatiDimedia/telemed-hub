@@ -43,14 +43,22 @@ func (r *PostgresRepository) Create(ctx context.Context, rec *model.MedicalRecor
 
 func (r *PostgresRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.MedicalRecord, error) {
 	query := `
-		SELECT id, patient_id, consultation_id, record_type, content, file_id, created_at, updated_at, created_by, updated_by
-		FROM medical_records
-		WHERE id = $1 AND deleted_at IS NULL
+		SELECT 
+			mr.id, mr.patient_id, mr.consultation_id, mr.record_type, mr.content, mr.file_id, 
+			mr.created_at, mr.updated_at, mr.created_by, mr.updated_by,
+			u.full_name AS doctor_name,
+			s.name AS doctor_specialty
+		FROM medical_records mr
+		LEFT JOIN users u ON mr.created_by = u.id
+		LEFT JOIN doctors d ON d.user_id = u.id
+		LEFT JOIN specialties s ON d.specialty_id = s.id
+		WHERE mr.id = $1 AND mr.deleted_at IS NULL
 	`
 	var m model.MedicalRecord
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&m.ID, &m.PatientID, &m.ConsultationID, &m.RecordType, &m.Content, &m.FileID,
 		&m.CreatedAt, &m.UpdatedAt, &m.CreatedBy, &m.UpdatedBy,
+		&m.DoctorName, &m.DoctorSpecialty,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -63,9 +71,16 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.
 
 func (r *PostgresRepository) List(ctx context.Context, filter dto.ListMedicalRecordsFilter) ([]*model.MedicalRecord, error) {
 	query := `
-		SELECT id, patient_id, consultation_id, record_type, content, file_id, created_at, updated_at, created_by, updated_by
-		FROM medical_records
-		WHERE deleted_at IS NULL
+		SELECT 
+			mr.id, mr.patient_id, mr.consultation_id, mr.record_type, mr.content, mr.file_id, 
+			mr.created_at, mr.updated_at, mr.created_by, mr.updated_by,
+			u.full_name AS doctor_name,
+			s.name AS doctor_specialty
+		FROM medical_records mr
+		LEFT JOIN users u ON mr.created_by = u.id
+		LEFT JOIN doctors d ON d.user_id = u.id
+		LEFT JOIN specialties s ON d.specialty_id = s.id
+		WHERE mr.deleted_at IS NULL
 	`
 	args := []any{}
 	argCount := 1
@@ -75,18 +90,18 @@ func (r *PostgresRepository) List(ctx context.Context, filter dto.ListMedicalRec
 		if err != nil {
 			return nil, fmt.Errorf("invalid patient_id filter: %w", err)
 		}
-		query += fmt.Sprintf(" AND patient_id = $%d", argCount)
+		query += fmt.Sprintf(" AND mr.patient_id = $%d", argCount)
 		args = append(args, patientID)
 		argCount++
 	}
 
 	if filter.RecordType != nil && *filter.RecordType != "" {
-		query += fmt.Sprintf(" AND record_type = $%d", argCount)
+		query += fmt.Sprintf(" AND mr.record_type = $%d", argCount)
 		args = append(args, *filter.RecordType)
 		argCount++
 	}
 
-	query += " ORDER BY created_at DESC"
+	query += " ORDER BY mr.created_at DESC"
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -100,6 +115,7 @@ func (r *PostgresRepository) List(ctx context.Context, filter dto.ListMedicalRec
 		err := rows.Scan(
 			&m.ID, &m.PatientID, &m.ConsultationID, &m.RecordType, &m.Content, &m.FileID,
 			&m.CreatedAt, &m.UpdatedAt, &m.CreatedBy, &m.UpdatedBy,
+			&m.DoctorName, &m.DoctorSpecialty,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan medical record: %w", err)

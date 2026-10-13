@@ -15,6 +15,8 @@ import { Button } from "../../../components/ui/Button";
 import { Badge } from "../../../components/ui/Badge";
 import { useToastStore } from "../../../stores/toast-store";
 import { ConsultationReviewModal } from "./ConsultationReviewModal";
+import { useMedicalRecords } from "../../medical-records/hooks/use-medical-records";
+import { MedicalRecordList } from "../../medical-records/components/MedicalRecordList";
 import type { ConsultationMessage } from "../types";
 
 export interface ConsultationRoomViewProps {
@@ -27,8 +29,8 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
   const isDoctor = user?.role === "doctor";
   const addToast = useToastStore((state) => state.addToast);
 
-  // Tab state in doctor sidebar ('chat' | 'clinical')
-  const [activeTab, setActiveTab] = useState<"chat" | "clinical">("chat");
+  // Tab state in doctor sidebar ('chat' | 'clinical' | 'records')
+  const [activeTab, setActiveTab] = useState<"chat" | "clinical" | "records">("chat");
 
   // Mobile segmented view ('video' | 'panel')
   const [mobileView, setMobileView] = useState<"video" | "panel">("video");
@@ -50,6 +52,12 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
   // Complete consultation mutation
   const { mutateAsync: completeConsultation, isPending: isCompleting } =
     useCompleteConsultation();
+
+  // Fetch patient medical records for doctor review
+  const patientIdForRecords = room?.patient_id || room?.patient?.patient_id;
+  const { data: patientRecords, isLoading: isRecordsLoading } = useMedicalRecords({
+    patientId: isDoctor && patientIdForRecords ? patientIdForRecords : undefined,
+  });
 
   // Local state for instant real-time message stream
   const [liveMessages, setLiveMessages] = useState<ConsultationMessage[]>([]);
@@ -306,7 +314,7 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
           {isDoctor ? (
             <div className="flex flex-col h-full bg-white rounded-2xl border border-outline-variant/30 shadow-xs overflow-hidden">
               {/* Doctor Sidebar Tabs */}
-              <div className="grid grid-cols-2 p-1 bg-surface-container-low border-b border-outline-variant/20 select-none">
+              <div className="grid grid-cols-3 p-1 bg-surface-container-low border-b border-outline-variant/20 select-none">
                 <button
                   type="button"
                   onClick={() => setActiveTab("chat")}
@@ -329,6 +337,22 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
                 >
                   Rekam & Resep
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("records")}
+                  className={`py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 ${
+                    activeTab === "records"
+                      ? "bg-white text-primary shadow-xs"
+                      : "text-on-surface-variant hover:text-on-surface"
+                  }`}
+                >
+                  <span>Riwayat</span>
+                  {patientRecords && patientRecords.length > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary font-bold">
+                      {patientRecords.length}
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Tab Contents */}
@@ -342,12 +366,32 @@ export function ConsultationRoomView({ consultationId }: ConsultationRoomViewPro
                     peerName={peerParticipant.name}
                     isDoctor={true}
                   />
-                ) : (
+                ) : activeTab === "clinical" ? (
                   <PatientClinicalSummary
                     consultationId={room.consultation_id}
                     patient={room.patient}
                     initialNotes={room.notes}
                   />
+                ) : (
+                  <div className="p-4 h-full overflow-y-auto flex flex-col gap-3">
+                    <div className="flex items-center justify-between pb-1 border-b border-outline-variant/15">
+                      <div>
+                        <h4 className="text-xs font-bold text-on-surface flex items-center gap-1.5 uppercase tracking-wider">
+                          <span className="material-symbols-outlined text-[16px] text-primary">history</span>
+                          Riwayat Medis Pasien
+                        </h4>
+                        <p className="text-[11px] text-on-surface-variant mt-0.5">
+                          Kategori rekam medis & dokter penerbit
+                        </p>
+                      </div>
+                    </div>
+                    <MedicalRecordList
+                      records={patientRecords}
+                      isLoading={isRecordsLoading}
+                      maxHeight="max-h-[calc(100vh-270px)]"
+                      emptyMessage="Tidak ada rekam medis sebelumnya untuk pasien ini."
+                    />
+                  </div>
                 )}
               </div>
             </div>

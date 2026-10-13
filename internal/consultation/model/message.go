@@ -24,10 +24,12 @@ type RoomDetails struct {
 	AppointmentID   uuid.UUID
 	Status          string
 	Notes           *string
+	DoctorID        uuid.UUID
 	DoctorUserID    uuid.UUID
 	DoctorName      string
 	DoctorAvatar    *string
 	DoctorSpecialty *string
+	PatientID       uuid.UUID
 	PatientUserID   uuid.UUID
 	PatientName     string
 	PatientAvatar   *string

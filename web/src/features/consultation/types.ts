@@ -11,6 +11,8 @@ export interface Consultation {
 
 export interface ConsultationParticipant {
   user_id: string;
+  patient_id?: string | null;
+  doctor_id?: string | null;
   name: string;
   role: "doctor" | "patient" | string;
   profile_picture_url?: string | null;
@@ -34,6 +36,8 @@ export interface ConsultationMessage {
 export interface ConsultationRoom {
   consultation_id: string;
   appointment_id: string;
+  patient_id?: string | null;
+  doctor_id?: string | null;
   status: ConsultationStatus;
   notes?: string | null;
   doctor: ConsultationParticipant;

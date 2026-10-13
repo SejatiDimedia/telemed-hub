@@ -99,8 +99,8 @@ func (r *PostgresRepository) GetRoomDetails(ctx context.Context, consultationID 
 	query := `
 		SELECT 
 			c.id, c.appointment_id, c.status, c.notes,
-			doc_u.id, doc_u.full_name, doc_u.profile_picture_url, spec.name,
-			pat_u.id, pat_u.full_name, pat_u.profile_picture_url, pat.gender, pat.blood_type, pat.date_of_birth
+			d.id, doc_u.id, doc_u.full_name, doc_u.profile_picture_url, spec.name,
+			pat.id, pat_u.id, pat_u.full_name, pat_u.profile_picture_url, pat.gender, pat.blood_type, pat.date_of_birth
 		FROM consultations c
 		JOIN appointments a ON c.appointment_id = a.id
 		JOIN doctors d ON a.doctor_id = d.id
@@ -113,8 +113,8 @@ func (r *PostgresRepository) GetRoomDetails(ctx context.Context, consultationID 
 	var rd model.RoomDetails
 	err := r.db.QueryRow(ctx, query, consultationID).Scan(
 		&rd.ConsultationID, &rd.AppointmentID, &rd.Status, &rd.Notes,
-		&rd.DoctorUserID, &rd.DoctorName, &rd.DoctorAvatar, &rd.DoctorSpecialty,
-		&rd.PatientUserID, &rd.PatientName, &rd.PatientAvatar, &rd.PatientGender, &rd.PatientBlood, &rd.PatientDOB,
+		&rd.DoctorID, &rd.DoctorUserID, &rd.DoctorName, &rd.DoctorAvatar, &rd.DoctorSpecialty,
+		&rd.PatientID, &rd.PatientUserID, &rd.PatientName, &rd.PatientAvatar, &rd.PatientGender, &rd.PatientBlood, &rd.PatientDOB,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
